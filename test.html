@@ -147,11 +147,6 @@
                 <span id="sync-text">Cloud Synced</span>
             </div>
 
-            <button id="settingsBtn" class="hover:bg-slate-800 active:scale-95 px-3 py-2 rounded-xl transition flex items-center gap-2 text-slate-300 hover:text-white text-sm font-medium" title="AI & Model Settings">
-                <i class="fas fa-sliders"></i>
-                <span class="hidden md:inline">AI Settings</span>
-            </button>
-
             <div class="h-5 w-[1px] bg-slate-800 hidden sm:block"></div>
 
             <!-- User Profile & Sign Out -->
@@ -332,65 +327,7 @@
                     </div>
                     <div class="flex justify-between items-center mt-2 px-1 text-[11px] text-slate-400">
                         <span><kbd class="px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200 font-sans">Enter</kbd> to send, <kbd class="px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200 font-sans">Shift+Enter</kbd> for new line</span>
-                        <span id="active-model-badge" class="font-mono text-[10px] text-slate-500 truncate max-w-[160px]">openai/gpt-4o-mini</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- VIEW 4: SETTINGS -->
-        <div id="view-settings" class="absolute inset-0 overflow-y-auto p-6 md:p-10 view-hidden animate-view">
-            <div class="max-w-2xl mx-auto w-full">
-                <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200/80">
-                    <div class="flex items-center gap-3.5 mb-6 pb-5 border-b border-slate-100">
-                        <div class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
-                            <i class="fas fa-sliders"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-2xl font-bold text-slate-900">Studio Configuration</h2>
-                            <p class="text-xs text-slate-500">Configure your OpenRouter API connection & model preferences</p>
-                        </div>
-                    </div>
-                    
-                    <div class="space-y-6">
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-800 mb-2">OpenRouter API Key</label>
-                            <div class="relative">
-                                <input type="password" id="api-key-input" placeholder="sk-or-v1-..." class="w-full p-3.5 pr-11 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none text-sm font-mono transition">
-                                <button type="button" id="toggleApiKeyVis" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                                    <i class="far fa-eye"></i>
-                                </button>
-                            </div>
-                            <p class="text-xs text-slate-500 mt-2 flex items-center gap-1.5">
-                                <i class="fas fa-shield-halved text-emerald-500"></i> Synced privately to your personal cloud profile & browser.
-                            </p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-800 mb-2">Model Identifier (Slug)</label>
-                            <input type="text" id="model-slug-input" placeholder="e.g., openai/gpt-4o-mini" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none font-mono text-sm transition">
-                            <p class="text-xs text-slate-500 mt-1.5 mb-3">Choose any model slug supported by OpenRouter:</p>
-                            <div class="flex flex-wrap gap-2 text-xs">
-                                <button type="button" class="model-preset bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 border border-slate-200 px-3 py-1.5 rounded-lg font-mono cursor-pointer transition">openai/gpt-4o-mini</button>
-                                <button type="button" class="model-preset bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 border border-slate-200 px-3 py-1.5 rounded-lg font-mono cursor-pointer transition">anthropic/claude-3.5-sonnet</button>
-                                <button type="button" class="model-preset bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 border border-slate-200 px-3 py-1.5 rounded-lg font-mono cursor-pointer transition">meta-llama/llama-3.1-8b-instruct</button>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-indigo-50/70 p-4 rounded-2xl border border-indigo-100">
-                            <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-900 mb-1 flex items-center gap-1.5">
-                                <i class="fas fa-brain text-indigo-500"></i> Active AI Engine & System Prompt
-                            </h4>
-                            <p class="text-xs text-indigo-800/80 leading-relaxed">
-                                The AI engine is locked to your original novelist configuration: instructing it to write natural, engaging human-like prose, avoid AI conversational clichés, and seamlessly weave your book synopsis and prior chapters into each new scene.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="mt-8 pt-6 border-t border-slate-100 flex justify-end gap-3">
-                        <button id="saveSettingsBtn" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-6 py-2.5 rounded-xl font-medium transition shadow-md shadow-indigo-600/20 flex items-center gap-2">
-                            <i class="fas fa-check"></i> Save Configuration
-                        </button>
+                        <span id="active-model-badge" class="font-mono text-[10px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 truncate max-w-[200px]">Loading AI Config...</span>
                     </div>
                 </div>
             </div>
@@ -428,7 +365,7 @@
         // --- Firebase SDK Imports (v11.6.1) ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getStorage, ref as storageRef, uploadString, getBytes } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- User Provided Firebase Configuration ---
         const firebaseConfig = {
@@ -440,26 +377,25 @@
             appId: "1:890136810049:web:a5093c92194f4172f0ecc0"
         };
 
-        // Initialize Firebase Auth & Storage
+        // Initialize Firebase Auth & Cloud Firestore
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const storage = getStorage(app);
+        const db = getFirestore(app);
         const googleProvider = new GoogleAuthProvider();
 
         // --- Constants & Keys ---
         const STORAGE_KEY_BOOKS = 'ai_book_writer_books';
-        const STORAGE_KEY_SETTINGS = 'ai_book_writer_settings';
 
-        // --- Default Settings ---
+        // --- AI Settings (Pulled from Firestore: artificial-intelligence / authentication) ---
         let settings = {
             apiKey: '',
-            modelSlug: 'openai/gpt-4o-mini'
+            modelSlug: ''
         };
 
         // --- State ---
         let currentUser = null;
         let books = [];
-        let currentView = 'bookshelf'; // bookshelf, book, chapter, settings
+        let currentView = 'bookshelf'; // bookshelf, book, chapter
         let activeBookId = null;
         let activeChapterId = null;
         let isEditing = false;
@@ -476,12 +412,10 @@
         const views = {
             bookshelf: document.getElementById('view-bookshelf'),
             book: document.getElementById('view-book'),
-            chapter: document.getElementById('view-chapter'),
-            settings: document.getElementById('view-settings')
+            chapter: document.getElementById('view-chapter')
         };
         const backBtn = document.getElementById('backBtn');
         const logoBtn = document.getElementById('logoBtn');
-        const settingsBtn = document.getElementById('settingsBtn');
 
         // Auth Elements
         const authOverlay = document.getElementById('auth-overlay');
@@ -524,13 +458,6 @@
         const aiStatus = document.getElementById('ai-status');
         const activeModelBadge = document.getElementById('active-model-badge');
 
-        // Settings Elements
-        const apiKeyInput = document.getElementById('api-key-input');
-        const toggleApiKeyVis = document.getElementById('toggleApiKeyVis');
-        const modelSlugInput = document.getElementById('model-slug-input');
-        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-        const modelPresets = document.querySelectorAll('.model-preset');
-
         // Custom Modal Elements
         const modalBackdrop = document.getElementById('custom-modal-backdrop');
         const modalTitle = document.getElementById('modal-title');
@@ -543,102 +470,7 @@
         const modalIconContainer = document.getElementById('modal-icon-container');
 
         // =========================================================================
-        // CUSTOM SITE UI HELPERS (REPLACES BROWSER ALERT / PROMPT / CONFIRM)
-        // =========================================================================
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            
-            const styles = {
-                info: 'bg-slate-900 text-white border-slate-800',
-                success: 'bg-emerald-950 text-emerald-100 border-emerald-800/80',
-                error: 'bg-red-950 text-red-100 border-red-800/80'
-            };
-            const icons = {
-                info: 'fa-circle-info text-indigo-400',
-                success: 'fa-circle-check text-emerald-400',
-                error: 'fa-triangle-exclamation text-red-400'
-            };
-
-            toast.className = `pointer-events-auto flex items-center gap-3 p-4 rounded-2xl shadow-xl border text-xs font-medium animate-modal transition duration-300 ${styles[type] || styles.info}`;
-            toast.innerHTML = `
-                <i class="fas ${icons[type] || icons.info} text-base shrink-0"></i>
-                <span class="flex-grow leading-relaxed">${escapeHtml(message)}</span>
-                <button class="text-slate-400 hover:text-white p-1"><i class="fas fa-xmark"></i></button>
-            `;
-
-            toast.querySelector('button').addEventListener('click', () => toast.remove());
-            container.appendChild(toast);
-
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateY(8px)';
-                setTimeout(() => toast.remove(), 250);
-            }, 4200);
-        }
-
-        function openSiteModal({ title, description, mode = 'prompt', placeholder = '', confirmText = 'Confirm', danger = false }) {
-            return new Promise((resolve) => {
-                modalTitle.textContent = title;
-                modalDescription.textContent = description;
-                modalConfirmBtn.textContent = confirmText;
-
-                if (danger) {
-                    modalConfirmBtn.className = "px-5 py-2 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-700 text-white transition shadow-sm";
-                    modalIconContainer.className = "w-11 h-11 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center shrink-0 text-lg";
-                    modalIcon.className = "fas fa-trash-can";
-                } else {
-                    modalConfirmBtn.className = "px-5 py-2 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm";
-                    modalIconContainer.className = "w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 text-lg";
-                    modalIcon.className = "fas fa-feather-pointed";
-                }
-
-                if (mode === 'prompt') {
-                    modalInputWrapper.classList.remove('view-hidden');
-                    modalInput.value = '';
-                    modalInput.placeholder = placeholder;
-                } else {
-                    modalInputWrapper.classList.add('view-hidden');
-                }
-
-                modalBackdrop.classList.remove('view-hidden');
-                if (mode === 'prompt') setTimeout(() => modalInput.focus(), 60);
-
-                const cleanup = () => {
-                    modalBackdrop.classList.add('view-hidden');
-                    modalConfirmBtn.removeEventListener('click', onConfirm);
-                    modalCancelBtn.removeEventListener('click', onCancel);
-                    modalInput.removeEventListener('keydown', onKey);
-                };
-
-                const onConfirm = () => {
-                    const val = mode === 'prompt' ? modalInput.value : true;
-                    cleanup();
-                    resolve(val);
-                };
-
-                const onCancel = () => {
-                    cleanup();
-                    resolve(null);
-                };
-
-                const onKey = (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        onConfirm();
-                    } else if (e.key === 'Escape') {
-                        onCancel();
-                    }
-                };
-
-                modalConfirmBtn.addEventListener('click', onConfirm);
-                modalCancelBtn.addEventListener('click', onCancel);
-                modalInput.addEventListener('keydown', onKey);
-            });
-        }
-
-        // =========================================================================
-        // FIREBASE STORAGE & GOOGLE AUTHENTICATION
+        // FIRESTORE DATABASE: AI CREDENTIALS & BOOKS STORAGE
         // =========================================================================
         function setSyncIndicator(state, label) {
             if (state === 'syncing') {
@@ -649,85 +481,107 @@
                 syncText.textContent = label || 'Cloud Synced';
             } else if (state === 'error') {
                 syncDot.className = 'w-2 h-2 rounded-full bg-red-400';
-                syncText.textContent = label || 'Local Backup Active';
+                syncText.textContent = label || 'Sync Error (Check Rules)';
             }
         }
 
-        async function loadDataFromFirebaseStorage() {
-            if (!currentUser) return;
-            setSyncIndicator('syncing', 'Loading library...');
-
-            // Load AI settings strictly from original local storage key (decoupled from Firebase)
-            const savedSettings = localStorage.getItem(STORAGE_KEY_SETTINGS);
-            if (savedSettings) {
-                try {
-                    settings = { ...settings, ...JSON.parse(savedSettings) };
-                } catch (e) { console.error("Error loading settings", e); }
-            }
-
+        // Pulls OpenRouter `api` and `slug` directly from Firestore: artificial-intelligence / authentication
+        async function fetchAIConfigFromFirestore() {
             try {
-                const userBooksRef = storageRef(storage, `users/${currentUser.uid}/books.json`);
-                const bytes = await getBytes(userBooksRef);
-                const decodedText = new TextDecoder().decode(bytes);
-                const parsed = JSON.parse(decodedText);
-
-                if (Array.isArray(parsed)) {
-                    books = parsed;
-                } else if (parsed && Array.isArray(parsed.books)) {
-                    books = parsed.books;
-                }
-                localStorage.setItem(STORAGE_KEY_BOOKS, JSON.stringify(books));
-                setSyncIndicator('saved', 'Cloud Synced');
-            } catch (error) {
-                if (error.code === 'storage/object-not-found') {
-                    const savedBooks = localStorage.getItem(STORAGE_KEY_BOOKS);
-                    if (savedBooks) {
-                        try {
-                            books = JSON.parse(savedBooks);
-                        } catch (e) { console.error("Error loading books", e); }
+                const aiDocRef = doc(db, "artificial-intelligence", "authentication");
+                const aiSnap = await getDoc(aiDocRef);
+                if (aiSnap.exists()) {
+                    const data = aiSnap.data();
+                    settings.apiKey = (data.api || '').trim();
+                    settings.modelSlug = (data.slug || '').trim();
+                    if (activeModelBadge) {
+                        activeModelBadge.textContent = settings.modelSlug || 'Model Loaded';
                     }
-                    await uploadBooksToFirebaseStorage();
                 } else {
-                    console.warn("Firebase Storage load notice:", error);
+                    console.error("Firestore document 'artificial-intelligence/authentication' does not exist.");
+                    showToast("AI config document 'artificial-intelligence/authentication' not found in Firestore.", "error");
+                }
+            } catch (error) {
+                console.error("Error fetching AI config from Firestore:", error);
+                showToast(`Firestore AI Auth Error: ${error.message}`, "error");
+            }
+        }
+
+        // Loads user's books from Firestore: users/{uid} (plus fetches AI config)
+        async function loadDataFromFirestore() {
+            if (!currentUser) return;
+            setSyncIndicator('syncing', 'Loading Cloud...');
+
+            // 1. Fetch AI credentials (`api` & `slug`) from `artificial-intelligence/authentication`
+            await fetchAIConfigFromFirestore();
+
+            // 2. Fetch User's Books from `users/{uid}` in Cloud Firestore
+            try {
+                const userDocRef = doc(db, "users", currentUser.uid);
+                const userSnap = await getDoc(userDocRef);
+
+                if (userSnap.exists() && Array.isArray(userSnap.data().books)) {
+                    books = userSnap.data().books;
+                    localStorage.setItem(STORAGE_KEY_BOOKS, JSON.stringify(books));
+                    setSyncIndicator('saved', 'Cloud Synced');
+                } else {
+                    // First time in Firestore: migrate any local books and push immediately to Firestore
                     const savedBooks = localStorage.getItem(STORAGE_KEY_BOOKS);
                     if (savedBooks) {
                         try {
                             books = JSON.parse(savedBooks);
-                        } catch (e) { console.error("Error loading books", e); }
+                        } catch (e) { books = []; }
+                    } else {
+                        books = [];
                     }
-                    setSyncIndicator('error', 'Saved Locally');
+                    await uploadBooksToFirestore();
                 }
+            } catch (error) {
+                console.error("Error loading books from Firestore:", error);
+                showToast(`Firestore Sync Error: ${error.message}`, "error");
+                const savedBooks = localStorage.getItem(STORAGE_KEY_BOOKS);
+                if (savedBooks) {
+                    try {
+                        books = JSON.parse(savedBooks);
+                    } catch (e) { console.error("Error loading local backup", e); }
+                }
+                setSyncIndicator('error', 'Sync Failed');
             }
 
-            activeModelBadge.textContent = settings.modelSlug || 'openai/gpt-4o-mini';
             renderView(currentView);
         }
 
-        async function uploadBooksToFirebaseStorage() {
+        // Saves user's books directly into Firestore `users/{uid}`
+        async function uploadBooksToFirestore() {
             if (!currentUser) return;
-            setSyncIndicator('syncing', 'Syncing to Firebase...');
+            setSyncIndicator('syncing', 'Syncing to Firestore...');
             try {
-                const userBooksRef = storageRef(storage, `users/${currentUser.uid}/books.json`);
-                await uploadString(userBooksRef, JSON.stringify(books), 'raw', { contentType: 'application/json' });
+                const userDocRef = doc(db, "users", currentUser.uid);
+                await setDoc(userDocRef, {
+                    books: books,
+                    updatedAt: new Date().toISOString(),
+                    email: currentUser.email || ''
+                }, { merge: true });
                 setSyncIndicator('saved', 'Cloud Synced');
             } catch (error) {
-                console.error("Error uploading books to Firebase Storage:", error);
-                setSyncIndicator('error', 'Local Backup Saved');
+                console.error("Error saving books to Firestore:", error);
+                setSyncIndicator('error', 'Cloud Sync Failed');
+                showToast(`Failed to sync novel to Firestore: ${error.message}`, "error");
             }
         }
 
-        function saveData() {
+        function saveData(immediate = false) {
             localStorage.setItem(STORAGE_KEY_BOOKS, JSON.stringify(books));
             if (!currentUser) return;
             setSyncIndicator('syncing', 'Syncing...');
             clearTimeout(syncTimeout);
-            syncTimeout = setTimeout(() => {
-                uploadBooksToFirebaseStorage();
-            }, 650);
-        }
-
-        function saveSettingsData() {
-            localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(settings));
+            if (immediate) {
+                uploadBooksToFirestore();
+            } else {
+                syncTimeout = setTimeout(() => {
+                    uploadBooksToFirestore();
+                }, 400);
+            }
         }
 
         function generateId() {
@@ -766,7 +620,9 @@
             currentView = viewName;
             
             // Hide all views
-            Object.values(views).forEach(v => v.classList.add('view-hidden'));
+            Object.values(views).forEach(v => {
+                if (v) v.classList.add('view-hidden');
+            });
             
             // Show selected view
             if (views[viewName]) {
@@ -776,19 +632,12 @@
             // Update Header buttons
             if (viewName === 'bookshelf') {
                 backBtn.classList.add('view-hidden');
-                settingsBtn.classList.remove('view-hidden');
                 renderBookshelf();
-            } else if (viewName === 'settings') {
-                backBtn.classList.remove('view-hidden');
-                settingsBtn.classList.add('view-hidden');
-                populateSettings();
             } else if (viewName === 'book') {
                 backBtn.classList.remove('view-hidden');
-                settingsBtn.classList.remove('view-hidden');
                 renderBookDetails();
             } else if (viewName === 'chapter') {
                 backBtn.classList.remove('view-hidden');
-                settingsBtn.classList.remove('view-hidden');
                 renderChapterWriter();
             }
         }
@@ -796,7 +645,7 @@
         function handleBack() {
             if (currentView === 'chapter') {
                 renderView('book');
-            } else if (currentView === 'book' || currentView === 'settings') {
+            } else if (currentView === 'book') {
                 renderView('bookshelf');
             }
         }
@@ -868,7 +717,7 @@
                     });
                     if (confirmed) {
                         books = books.filter(b => b.id !== id);
-                        saveData();
+                        saveData(true);
                         renderBookshelf();
                         showToast('Book removed from library.', 'info');
                     }
@@ -887,7 +736,7 @@
             if (title && title.trim()) {
                 const newBook = { id: generateId(), title: title.trim(), synopsis: '', chapters: [] };
                 books.push(newBook);
-                saveData();
+                saveData(true); // Immediately sync new book to Firestore
                 activeBookId = newBook.id;
                 renderView('book');
                 showToast(`Created "${newBook.title}"`, 'success');
@@ -952,7 +801,7 @@
                     });
                     if (confirmed) {
                         book.chapters = book.chapters.filter(c => c.id !== chapterId);
-                        saveData();
+                        saveData(true);
                         renderBookDetails();
                         showToast('Chapter deleted.', 'info');
                     }
@@ -1018,7 +867,7 @@
                     messages: [{ role: 'system', content: BASE_SYSTEM_PROMPT }]
                 };
                 book.chapters.push(newChapter);
-                saveData();
+                saveData(true); // Immediately sync new chapter to Firestore
                 renderBookDetails();
                 showToast(`Added "${newChapter.title}"`, 'success');
             }
@@ -1190,13 +1039,19 @@
         // =========================================================================
         // ORIGINAL AI ENGINE & OPENROUTER FETCH LOGIC (100% VERBATIM)
         // =========================================================================
+        // ORIGINAL AI ENGINE & OPENROUTER FETCH LOGIC (PULLING API & SLUG FROM FIRESTORE)
+        // =========================================================================
         async function handleSendMessage() {
             const userPrompt = chatInput.value.trim();
             if (!userPrompt || isGenerating) return;
 
+            // Ensure AI config (`api` and `slug`) is loaded from Firestore `artificial-intelligence/authentication`
+            if (!settings.apiKey || !settings.modelSlug) {
+                await fetchAIConfigFromFirestore();
+            }
+
             if (!settings.apiKey) {
-                showToast("Please set your OpenRouter API Key in Settings first.", "error");
-                renderView('settings');
+                showToast("Could not load 'api' key from Firestore (artificial-intelligence/authentication).", "error");
                 return;
             }
 
@@ -1273,7 +1128,7 @@ IMPORTANT RULES:
                     updateViewerContent(chapter.content);
                 }
 
-                saveData();
+                saveData(true);
                 renderChatHistory();
 
             } catch (error) {
@@ -1286,19 +1141,6 @@ IMPORTANT RULES:
             } finally {
                 setGeneratingState(false);
             }
-        }
-
-        // --- Settings Logic ---
-        function populateSettings() {
-            apiKeyInput.value = settings.apiKey || '';
-            modelSlugInput.value = settings.modelSlug || '';
-        }
-
-        function handleSaveSettings() {
-            settings.apiKey = apiKeyInput.value.trim();
-            settings.modelSlug = modelSlugInput.value.trim() || 'openai/gpt-4o-mini';
-            saveSettingsData();
-            renderView('bookshelf');
         }
 
         // --- Event Listeners ---
@@ -1319,7 +1161,7 @@ IMPORTANT RULES:
             logoutBtn.addEventListener('click', async () => {
                 const confirmed = await openSiteModal({
                     title: 'Sign Out?',
-                    description: 'Your books are safely stored in your cloud storage. Would you like to sign out of your studio session?',
+                    description: 'Your books are safely stored in your cloud database. Would you like to sign out of your studio session?',
                     mode: 'confirm',
                     confirmText: 'Sign Out'
                 });
@@ -1330,7 +1172,6 @@ IMPORTANT RULES:
 
             // Global Nav
             logoBtn.addEventListener('click', () => { if (currentView !== 'bookshelf') renderView('bookshelf'); });
-            settingsBtn.addEventListener('click', () => renderView('settings'));
             backBtn.addEventListener('click', handleBack);
 
             // Bookshelf
@@ -1374,19 +1215,6 @@ IMPORTANT RULES:
             chatInput.addEventListener('input', () => {
                 sendChatBtn.disabled = isGenerating || !chatInput.value.trim();
             });
-
-            // Settings
-            saveSettingsBtn.addEventListener('click', handleSaveSettings);
-            toggleApiKeyVis.addEventListener('click', () => {
-                const isPwd = apiKeyInput.type === 'password';
-                apiKeyInput.type = isPwd ? 'text' : 'password';
-                toggleApiKeyVis.innerHTML = isPwd ? '<i class="far fa-eye-slash"></i>' : '<i class="far fa-eye"></i>';
-            });
-            modelPresets.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    modelSlugInput.value = e.target.textContent;
-                });
-            });
             
             window.addEventListener('resize', () => {
                 if (currentView === 'chapter' && chatHistory) {
@@ -1408,7 +1236,7 @@ IMPORTANT RULES:
                     if (user.photoURL) {
                         userAvatar.src = user.photoURL;
                     }
-                    await loadDataFromFirebaseStorage();
+                    await loadDataFromFirestore();
                 } else {
                     currentUser = null;
                     books = [];
