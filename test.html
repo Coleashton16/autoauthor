@@ -749,6 +749,444 @@
             return book ? book.chapters.find(c => c.id === activeChapterId) : null;
         }
 
+        function getPreviousChaptersContext(book, currentChapterId) {
+            const currentIndex = book.chapters.findIndex(c => c.id === currentChapterId);
+            if (currentIndex <= 0) return "";
+
+            let contextString = "PREVIOUS CHAPTERS CONTEXT:\n";
+            for (let i = 0; i < currentIndex; i++) {
+                const prevChap = book.chapters[i];
+                contextString += `--- ${prevChap.title} ---\n${prevChap.content || '(Empty)'}\n\n`;
+            }
+            return contextString;
+        }
+
+        // --- View Management ---
+        function renderView(viewName) {
+            currentView = viewName;
+            
+            // Hide all views
+            Object.values(views).forEach(v => v.classList.add('view-hidden'));
+            
+            // Show selected view
+            if (views[viewName]) {
+                views[viewName].classList.remove('view-hidden');
+            }
+
+            // Update Header buttons
+            if (viewName === 'bookshelf') {
+                backBtn.classList.add('view-hidden');
+                settingsBtn.classList.remove('view-hidden');
+                renderBookshelf();
+            } else if (viewName === 'settings') {
+                backBtn.classList.remove('view-hidden');
+                settingsBtn.classList.add('view-hidden');
+                populateSettings();
+            } else if (viewName === 'book') {
+                backBtn.classList.remove('view-hidden');
+                settingsBtn.classList.remove('view-hidden');
+                renderBookDetails();
+            } else if (viewName === 'chapter') {
+                backBtn.classList.remove('view-hidden');
+                settingsBtn.classList.remove('view-hidden');
+                renderChapterWriter();
+            }
+        }
+
+        function handleBack() {
+            if (currentView === 'chapter') {
+                renderView('book');
+            } else if (currentView === 'book' || currentView === 'settings') {
+                renderView('bookshelf');
+            }
+        }
+
+        // --- Bookshelf Logic ---
+        function renderBookshelf() {
+            bookshelfGrid.innerHTML = '';
+            
+            if (books.length === 0) {
+                bookshelfEmpty.classList.remove('view-hidden');
+                bookshelfGrid.classList.add('view-hidden');
+                return;
+            }
+
+            bookshelfEmpty.classList.add('view-hidden');
+            bookshelfGrid.classList.remove('view-hidden');
+
+            books.forEach(book => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-6 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 border border-slate-200/80 transition-all duration-200 flex flex-col group cursor-pointer";
+                
+                const synopsisText = book.synopsis ? book.synopsis : "No synopsis written yet. Click to add plot context.";
+                const totalWords = book.chapters.reduce((sum, ch) => sum + countWords(ch.content), 0);
+
+                card.innerHTML = `
+                    <div class="flex items-start justify-between gap-3 mb-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition">
+                            <i class="fas fa-book-bookmark"></i>
+                        </div>
+                        <button class="delete-book text-slate-300 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition opacity-0 group-hover:opacity-100" data-id="${book.id}" title="Delete Book">
+                            <i class="fas fa-trash-can text-sm"></i>
+                        </button>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-2 truncate group-hover:text-indigo-600 transition" title="${escapeHtml(book.title)}">${escapeHtml(book.title)}</h3>
+                    <p class="text-slate-500 text-sm mb-6 line-clamp-3 flex-grow leading-relaxed">${escapeHtml(synopsisText)}</p>
+                    <div class="flex justify-between items-center text-xs font-medium text-slate-400 pt-4 border-t border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <span><i class="far fa-file-lines mr-1"></i> ${book.chapters.length} Chapters</span>
+                            <span>•</span>
+                            <span>${totalWords.toLocaleString()} words</span>
+                        </div>
+                        <span class="open-book text-indigo-600 font-semibold flex items-center gap-1 group-hover:translate-x-0.5 transition" data-id="${book.id}">
+                            Open <i class="fas fa-arrow-right text-[10px]"></i>
+                        </span>
+                    </div>
+                `;
+
+                card.addEventListener('click', (e) => {
+                    if (!e.target.closest('.delete-book')) {
+                        activeBookId = book.id;
+                        renderView('book');
+                    }
+                });
+
+                bookshelfGrid.appendChild(card);
+            });
+
+            document.querySelectorAll('.delete-book').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const id = e.currentTarget.dataset.id;
+                    const targetBook = books.find(b => b.id === id);
+                    const confirmed = await openSiteModal({
+                        title: 'Delete Novel?',
+                        description: `Are you sure you want to permanently delete "${targetBook ? targetBook.title : 'this book'}"? This action cannot be undone.`,
+                        mode: 'confirm',
+                        confirmText: 'Delete Book',
+                        danger: true
+                    });
+                    if (confirmed) {
+                        books = books.filter(b => b.id !== id);
+                        saveData();
+                        renderBookshelf();
+                        showToast('Book removed from library.', 'info');
+                    }
+                });
+            });
+        }
+
+        async function createNewBook() {
+            const title = await openSiteModal({
+                title: 'Create New Book',
+                description: 'Give your new novel or manuscript a working title:',
+                mode: 'prompt',
+                placeholder: 'e.g., The Clockwork Alchemist',
+                confirmText: 'Create Book'
+            });
+            if (title && title.trim()) {
+                const newBook = { id: generateId(), title: title.trim(), synopsis: '', chapters: [] };
+                books.push(newBook);
+                saveData();
+                activeBookId = newBook.id;
+                renderView('book');
+                showToast(`Created "${newBook.title}"`, 'success');
+            }
+        }
+
+        // --- Book Details Logic ---
+        function renderBookDetails() {
+            const book = getActiveBook();
+            if (!book) { renderView('bookshelf'); return; }
+
+            currentBookTitle.textContent = book.title;
+            bookSynopsisInput.value = book.synopsis;
+
+            // Render Chapters List
+            chaptersList.innerHTML = '';
+            if (book.chapters.length === 0) {
+                chaptersList.innerHTML = `
+                    <div class="text-center py-8 px-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/50">
+                        <p class="text-xs text-slate-400">No chapters added yet. Click "+ Add Chapter" above to begin.</p>
+                    </div>
+                `;
+            } else {
+                book.chapters.forEach((chapter, index) => {
+                    const words = countWords(chapter.content);
+                    const item = document.createElement('div');
+                    item.className = "flex items-center justify-between group p-3 bg-slate-50/70 hover:bg-indigo-50/60 rounded-xl border border-slate-200/60 hover:border-indigo-200 transition cursor-pointer";
+                    item.dataset.id = chapter.id;
+                    item.innerHTML = `
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <div class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-indigo-600 flex items-center justify-center text-xs font-bold shrink-0 shadow-sm">${index + 1}</div>
+                            <div class="truncate">
+                                <p class="text-sm font-semibold text-slate-800 group-hover:text-indigo-700 truncate transition" title="${escapeHtml(chapter.title)}">${escapeHtml(chapter.title)}</p>
+                                <span class="text-[11px] text-slate-400">${words.toLocaleString()} words</span>
+                            </div>
+                        </div>
+                        <button class="delete-chapter text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-1.5 rounded-lg hover:bg-white" data-id="${chapter.id}" title="Delete Chapter">
+                            <i class="fas fa-trash-alt text-xs"></i>
+                        </button>
+                    `;
+                    item.addEventListener('click', (e) => {
+                        if (!e.target.closest('.delete-chapter')) {
+                            activeChapterId = chapter.id;
+                            renderView('chapter');
+                        }
+                    });
+                    chaptersList.appendChild(item);
+                });
+            }
+
+            // Attach delete chapter listeners
+            document.querySelectorAll('.delete-chapter').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const chapterId = e.currentTarget.dataset.id;
+                    const confirmed = await openSiteModal({
+                        title: 'Delete Chapter?',
+                        description: 'Are you sure you want to delete this chapter and its prose?',
+                        mode: 'confirm',
+                        confirmText: 'Delete Chapter',
+                        danger: true
+                    });
+                    if (confirmed) {
+                        book.chapters = book.chapters.filter(c => c.id !== chapterId);
+                        saveData();
+                        renderBookDetails();
+                        showToast('Chapter deleted.', 'info');
+                    }
+                });
+            });
+
+            // Total book word count
+            const totalWords = book.chapters.reduce((acc, c) => acc + countWords(c.content), 0);
+            bookWordCount.textContent = `${totalWords.toLocaleString()} words`;
+
+            // Render Manuscript Preview
+            manuscriptPreview.innerHTML = '';
+            if (book.chapters.length === 0) {
+                manuscriptPreview.innerHTML = `
+                    <div class="text-center py-24 text-slate-400">
+                        <i class="fas fa-feather text-3xl mb-3 opacity-40 block"></i>
+                        <p class="italic font-serif text-base">Your manuscript preview will appear here as you write chapters.</p>
+                    </div>
+                `;
+            } else {
+                book.chapters.forEach(chapter => {
+                    const section = document.createElement('div');
+                    section.className = "mb-14 pb-10 border-b border-slate-200/60 last:border-b-0 max-w-3xl mx-auto";
+                    
+                    const contentHtml = chapter.content 
+                        ? `<div class="whitespace-pre-wrap text-slate-800 leading-loose font-serif text-lg">${escapeHtml(chapter.content)}</div>`
+                        : `<p class="text-slate-400 italic font-sans text-sm">This chapter is currently empty.</p>`;
+                        
+                    section.innerHTML = `
+                        <h2 class="text-2xl font-bold mb-6 font-serif text-slate-900 tracking-tight">${escapeHtml(chapter.title)}</h2>
+                        ${contentHtml}
+                    `;
+                    manuscriptPreview.appendChild(section);
+                });
+            }
+        }
+
+        function handleSynopsisChange(e) {
+            const book = getActiveBook();
+            if (book) {
+                book.synopsis = e.target.value;
+                saveData();
+            }
+        }
+
+        async function createNewChapter() {
+            const book = getActiveBook();
+            if (!book) return;
+
+            const nextNum = book.chapters.length + 1;
+            const title = await openSiteModal({
+                title: 'Add New Chapter',
+                description: 'Enter a title for this chapter:',
+                mode: 'prompt',
+                placeholder: `Chapter ${nextNum}: The Beginning`,
+                confirmText: 'Add Chapter'
+            });
+            if (title && title.trim()) {
+                const newChapter = {
+                    id: generateId(),
+                    title: title.trim(),
+                    content: '',
+                    messages: [{ role: 'system', content: BASE_SYSTEM_PROMPT }]
+                };
+                book.chapters.push(newChapter);
+                saveData();
+                renderBookDetails();
+                showToast(`Added "${newChapter.title}"`, 'success');
+            }
+        }
+        
+        function exportManuscript() {
+            const book = getActiveBook();
+            if (!book) return;
+            
+            let text = `${book.title.toUpperCase()}\n\n`;
+            text += `Synopsis:\n${book.synopsis}\n\n`;
+            text += `=========================\n\n`;
+            
+            book.chapters.forEach(chapter => {
+                text += `\n\n### ${chapter.title} ###\n\n`;
+                text += chapter.content || "[Empty Chapter]";
+            });
+            
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${book.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_manuscript.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Manuscript exported as .txt', 'success');
+        }
+
+        // --- Chapter Writer Logic ---
+        function renderChapterWriter() {
+            const book = getActiveBook();
+            const chapter = getActiveChapter();
+            if (!book || !chapter) { renderView('bookshelf'); return; }
+
+            writerBookTitle.textContent = book.title;
+            writerChapterTitle.textContent = chapter.title;
+            activeModelBadge.textContent = settings.modelSlug || 'openai/gpt-4o-mini';
+
+            // Reset editing state on load
+            isEditing = false;
+            updateEditorState();
+            
+            // Populate content
+            chapterEditor.value = chapter.content;
+            updateViewerContent(chapter.content);
+
+            renderChatHistory();
+        }
+        
+        function updateViewerContent(content) {
+            chapterWordCount.textContent = `${countWords(content).toLocaleString()} words`;
+            if (content) {
+                chapterViewer.innerHTML = escapeHtml(content);
+            } else {
+                chapterViewer.innerHTML = `
+                    <div class="text-slate-400 italic font-sans text-sm mt-16 text-center max-w-sm mx-auto">
+                        <i class="fas fa-pen-nib text-2xl mb-3 opacity-40 block"></i>
+                        The page is currently blank. Use the AI Co-Author panel on the right to direct the opening scene, or click "Manual Edit" above to type directly.
+                    </div>
+                `;
+            }
+            chapterViewer.scrollTop = chapterViewer.scrollHeight;
+        }
+        
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+
+        function toggleEditMode() {
+            isEditing = !isEditing;
+            updateEditorState();
+        }
+
+        function updateEditorState() {
+            const chapter = getActiveChapter();
+            if (!chapter) return;
+
+            if (isEditing) {
+                toggleEditBtn.className = "px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition bg-indigo-600 text-white shadow-sm";
+                toggleEditBtn.innerHTML = '<i class="fas fa-check"></i> <span>Done Editing</span>';
+                
+                chapterViewer.classList.add('view-hidden');
+                chapterEditor.classList.remove('view-hidden');
+                chapterEditor.value = chapter.content;
+                chapterEditor.focus();
+            } else {
+                toggleEditBtn.className = "px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition bg-slate-100 text-slate-700 hover:bg-slate-200";
+                toggleEditBtn.innerHTML = '<i class="fas fa-pen-to-square"></i> <span>Manual Edit</span>';
+                
+                chapterEditor.classList.add('view-hidden');
+                chapterViewer.classList.remove('view-hidden');
+                updateViewerContent(chapter.content);
+            }
+        }
+
+        function handleEditorChange(e) {
+            const chapter = getActiveChapter();
+            if (chapter) {
+                chapter.content = e.target.value;
+                chapterWordCount.textContent = `${countWords(chapter.content).toLocaleString()} words`;
+                saveData();
+            }
+        }
+
+        function renderChatHistory() {
+            const chapter = getActiveChapter();
+            if (!chapter) return;
+
+            chatHistory.innerHTML = '';
+            
+            const visibleMessages = chapter.messages.filter(m => m.role !== 'system');
+            
+            if (visibleMessages.length === 0) {
+                chatHistory.innerHTML = `
+                    <div class="text-center p-6 bg-white rounded-2xl border border-slate-200/80 text-slate-600 text-xs leading-relaxed shadow-sm">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-sparkles"></i>
+                        </div>
+                        <p class="font-semibold text-slate-800 mb-1">Ready to Co-Write</p>
+                        Describe what should happen next in this chapter. The AI automatically reads your book synopsis and all previous chapters for continuity.
+                    </div>
+                `;
+                return;
+            }
+
+            visibleMessages.forEach(msg => {
+                const msgWrapper = document.createElement('div');
+                msgWrapper.className = `flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`;
+                
+                const bubbleStyle = msg.role === 'user' 
+                    ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-xs shadow-sm' 
+                    : 'bg-white border border-slate-200/90 text-slate-800 rounded-2xl rounded-tl-xs shadow-sm';
+                    
+                const roleText = msg.role === 'user' ? 'Your Direction' : 'Generated Prose Added';
+
+                msgWrapper.innerHTML = `
+                    <div class="max-w-[90%] p-3.5 ${bubbleStyle}">
+                        <p class="text-xs md:text-sm whitespace-pre-wrap leading-relaxed ${msg.role === 'assistant' ? 'font-serif' : ''}">${escapeHtml(msg.content)}</p>
+                    </div>
+                    <span class="text-[10px] font-medium text-slate-400 mt-1 px-1.5">${roleText}</span>
+                `;
+                chatHistory.appendChild(msgWrapper);
+            });
+            
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function setGeneratingState(generating) {
+            isGenerating = generating;
+            chatInput.disabled = generating;
+            sendChatBtn.disabled = generating || !chatInput.value.trim();
+            
+            if (generating) {
+                aiStatus.classList.remove('hidden');
+            } else {
+                aiStatus.classList.add('hidden');
+                setTimeout(() => chatInput.focus(), 100);
+            }
+        }
+
         // =========================================================================
         // ORIGINAL AI ENGINE & OPENROUTER FETCH LOGIC (100% VERBATIM)
         // =========================================================================
