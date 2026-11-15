@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoAuthor AI — Literary Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Lora', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.4);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 116, 139, 0.7);
+        }
+
+        .view-hidden {
+            display: none !important;
+        }
+
+        /* Animations */
+        @keyframes fadeScaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.98) translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        @keyframes modalPop {
+            from {
+                opacity: 0;
+                transform: scale(0.94) translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .animate-view {
+            animation: fadeScaleIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .animate-modal {
+            animation: modalPop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Paper texture feel for editor */
+        .paper-canvas {
+            background-color: #fdfcf9;
+            background-image: radial-gradient(#e5e7eb 0.5px, transparent 0.5px);
+            background-size: 24px 24px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans h-screen flex flex-col text-slate-800 selection:bg-indigo-500 selection:text-white overflow-hidden">
+
+    <!-- ================= AUTHENTICATION OVERLAY (GOOGLE SIGN-IN REQUIRED) ================= -->
+    <div id="auth-overlay" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4 overflow-hidden">
+        <!-- Ambient Animated Background Blobs -->
+        <div class="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/25 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
+        <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
+
+        <div class="relative w-full max-w-md bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 md:p-10 shadow-2xl text-center animate-modal">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-500/30">
+                <i class="fas fa-feather-pointed text-2xl text-white"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-white tracking-tight mb-2">AutoAuthor AI</h1>
+            <p class="text-slate-400 text-sm mb-8 leading-relaxed">
+                Your distraction-free cloud literary studio. Sign in with Google to access and sync your manuscripts across devices.
+            </p>
+
+            <div id="auth-loading" class="py-4 text-slate-400 text-sm flex items-center justify-center gap-3">
+                <i class="fas fa-circle-notch fa-spin text-indigo-400 text-lg"></i>
+                <span>Checking authentication status...</span>
+            </div>
+
+            <div id="auth-actions" class="view-hidden space-y-4">
+                <button id="googleLoginBtn" class="w-full bg-white hover:bg-slate-100 active:scale-[0.99] text-slate-900 font-semibold py-3.5 px-6 rounded-xl shadow-lg flex items-center justify-center gap-3 transition duration-200">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24">
+                        <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.8C6.2 7.2 8.9 5 12 5z"/>
+                        <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.6l3.7 2.9c2.2-2 3.7-5 3.7-8.7z"/>
+                        <path fill="#FBBC05" d="M5.3 14.8c-.2-.8-.4-1.6-.4-2.5s.2-1.7.4-2.5L1.6 7C.6 9 0 11.2 0 13.5s.6 4.5 1.6 6.5l3.7-2.9z"/>
+                        <path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.1-6.7-5l-3.7 2.8C3.5 21.4 7.4 24 12 24z"/>
+                    </svg>
+                    <span>Continue with Google</span>
+                </button>
+                <div id="auth-error-box" class="view-hidden p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs text-left leading-relaxed"></div>
+            </div>
+
+            <div class="mt-8 pt-6 border-t border-slate-800/80 flex items-center justify-center gap-2 text-xs text-slate-500">
+                <i class="fas fa-cloud text-indigo-400"></i>
+                <span>Powered by Firebase Cloud Storage</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= TOP NAVIGATION HEADER ================= -->
+    <header class="bg-slate-900/95 backdrop-blur-md text-white px-4 md:px-6 py-3.5 shadow-sm border-b border-slate-800 flex justify-between items-center z-20 shrink-0">
+        <div class="flex items-center gap-3">
+            <button id="backBtn" class="hover:bg-slate-800 active:scale-95 w-9 h-9 rounded-xl flex items-center justify-center transition view-hidden text-slate-300 hover:text-white" title="Go Back">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <div class="flex items-center gap-2.5 cursor-pointer group" id="logoBtn">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-md shadow-indigo-500/20 group-hover:scale-105 transition">
+                    <i class="fas fa-feather-pointed text-white text-sm"></i>
+                </div>
+                <div>
+                    <h1 class="text-base md:text-lg font-bold tracking-tight flex items-center gap-2">
+                        AutoAuthor <span class="text-xs font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Studio</span>
+                    </h1>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side Status, Settings, & User Profile -->
+        <div class="flex items-center gap-2 md:gap-4">
+            <!-- Cloud Sync Status Pill -->
+            <div id="sync-indicator" class="hidden sm:flex items-center gap-2 text-xs px-3 py-1.5 rounded-full bg-slate-800/90 border border-slate-700/80 text-slate-300">
+                <span id="sync-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span id="sync-text">Cloud Synced</span>
+            </div>
+
+            <button id="settingsBtn" class="hover:bg-slate-800 active:scale-95 px-3 py-2 rounded-xl transition flex items-center gap-2 text-slate-300 hover:text-white text-sm font-medium" title="AI & Model Settings">
+                <i class="fas fa-sliders"></i>
+                <span class="hidden md:inline">AI Settings</span>
+            </button>
+
+            <div class="h-5 w-[1px] bg-slate-800 hidden sm:block"></div>
+
+            <!-- User Profile & Sign Out -->
+            <div id="user-profile-bar" class="flex items-center gap-2.5 pl-1">
+                <img id="user-avatar" src="https://placehold.co/40x40/4f46e5/ffffff?text=U" alt="Avatar" class="w-8 h-8 rounded-full border border-slate-700 object-cover">
+                <span id="user-name" class="text-xs font-medium text-slate-300 hidden lg:inline max-w-[140px] truncate">Author</span>
+                <button id="logoutBtn" class="hover:bg-red-500/10 hover:text-red-400 text-slate-400 p-2 rounded-xl transition text-xs" title="Sign Out">
+                    <i class="fas fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ================= MAIN VIEWPORT ================= -->
+    <main class="flex-grow overflow-hidden relative bg-slate-50">
+        
+        <!-- VIEW 1: BOOKSHELF -->
+        <div id="view-bookshelf" class="absolute inset-0 overflow-y-auto p-6 md:p-10 animate-view">
+            <div class="max-w-6xl mx-auto w-full">
+                <!-- Hero Banner -->
+                <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 pb-6 border-b border-slate-200/80">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-indigo-600 mb-1">Personal Cloud Library</p>
+                        <h2 class="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">Your Bookshelf</h2>
+                    </div>
+                    <button id="newBookBtn" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-5 py-2.5 rounded-xl font-medium flex items-center justify-center gap-2.5 shadow-md shadow-indigo-600/20 transition cursor-pointer">
+                        <i class="fas fa-plus text-sm"></i>
+                        <span>New Book</span>
+                    </button>
+                </div>
+
+                <!-- Empty State -->
+                <div id="bookshelf-empty" class="text-center py-20 px-6 bg-white rounded-3xl border border-slate-200/80 shadow-sm view-hidden max-w-lg mx-auto my-8">
+                    <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-5">
+                        <i class="fas fa-book-open text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">Your bookshelf is waiting</h3>
+                    <p class="text-slate-500 text-sm mb-6 leading-relaxed">Create your first novel, outline your overarching plot synopsis, and collaborate with your AI co-author chapter by chapter.</p>
+                    <button id="emptyNewBookBtn" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition inline-flex items-center gap-2">
+                        <i class="fas fa-sparkles text-indigo-400"></i> Start Your First Novel
+                    </button>
+                </div>
+
+                <!-- Books Grid -->
+                <div id="bookshelf-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Books injected dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: BOOK DETAILS & MANUSCRIPT PREVIEW -->
+        <div id="view-book" class="absolute inset-0 overflow-y-auto p-6 md:p-8 view-hidden animate-view">
+            <div class="max-w-7xl mx-auto w-full flex flex-col lg:flex-row gap-8">
+                
+                <!-- Left Column: Book Meta & Chapter List -->
+                <div class="w-full lg:w-5/12 xl:w-1/3 flex flex-col gap-6">
+                    <!-- Book Card -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
+                        <div class="flex items-start justify-between gap-2 mb-4">
+                            <div>
+                                <span class="text-[11px] font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md">Novel Project</span>
+                                <h2 id="current-book-title" class="text-2xl font-bold text-slate-900 mt-2 leading-snug">Book Title</h2>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label for="book-synopsis-input" class="block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                    Synopsis & Story Bible (AI Context)
+                                </label>
+                                <span class="text-[11px] text-slate-400">Auto-saves</span>
+                            </div>
+                            <textarea id="book-synopsis-input" class="w-full p-3.5 bg-slate-50/70 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none text-sm text-slate-700 min-h-[160px] resize-y leading-relaxed transition" placeholder="Write a summary of the overarching plot, main characters, tone, and world rules. The AI uses this to keep every chapter consistent."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Chapters Card -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 flex-grow flex flex-col">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-900">Chapters</h3>
+                                <p class="text-xs text-slate-400">Select a chapter to open the co-writer</p>
+                            </div>
+                            <button id="newChapterBtn" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition" title="Add Chapter">
+                                <i class="fas fa-plus"></i> Add Chapter
+                            </button>
+                        </div>
+                        <div id="chapters-list" class="space-y-2.5 overflow-y-auto max-h-[420px] pr-1">
+                            <!-- Chapters injected here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Full Manuscript Reader -->
+                <div class="w-full lg:w-7/12 xl:w-2/3 bg-white rounded-2xl shadow-sm border border-slate-200/80 min-h-[650px] flex flex-col overflow-hidden">
+                    <div class="px-6 py-4 bg-slate-50/80 border-b border-slate-200/80 flex flex-wrap justify-between items-center gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <i class="fas fa-scroll text-indigo-500"></i>
+                            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700">Full Manuscript Preview</h3>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span id="book-word-count" class="text-xs font-medium text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200">0 words</span>
+                            <button id="exportManuscriptBtn" class="text-xs bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-xl font-medium flex items-center gap-2 transition shadow-sm">
+                                <i class="fas fa-download text-indigo-300"></i> Export .txt
+                            </button>
+                        </div>
+                    </div>
+                    <div id="manuscript-preview" class="flex-grow overflow-y-auto p-8 md:p-12 paper-canvas">
+                        <!-- Full manuscript text injected here -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- VIEW 3: CHAPTER WRITER & AI CO-WRITER -->
+        <div id="view-chapter" class="absolute inset-0 flex flex-col lg:flex-row overflow-hidden bg-slate-100 view-hidden animate-view">
+            
+            <!-- Left Side: Literary Writing Canvas -->
+            <div class="w-full lg:w-3/5 xl:w-2/3 flex flex-col border-r border-slate-200/90 bg-white h-[52vh] lg:h-full">
+                <!-- Writer Sub-header -->
+                <div class="px-6 py-3.5 border-b border-slate-200/80 bg-white flex justify-between items-center gap-4 shrink-0">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span id="writer-book-title" class="text-xs font-semibold text-indigo-600 uppercase tracking-wider truncate">Book Title</span>
+                            <span class="text-slate-300">/</span>
+                            <span id="chapter-word-count" class="text-xs text-slate-400 font-medium">0 words</span>
+                        </div>
+                        <h3 id="writer-chapter-title" class="text-lg md:text-xl font-bold text-slate-900 truncate">Chapter Title</h3>
+                    </div>
+
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button id="copyChapterBtn" class="px-3 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5" title="Copy Chapter Text">
+                            <i class="far fa-copy"></i> <span class="hidden sm:inline">Copy</span>
+                        </button>
+                        <button id="toggleEditBtn" class="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition bg-slate-100 text-slate-700 hover:bg-slate-200">
+                            <i class="fas fa-pen-to-square"></i> <span id="toggleEditText">Manual Edit</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Prose Viewport -->
+                <div class="flex-grow relative overflow-hidden paper-canvas flex flex-col">
+                    <textarea id="chapter-editor" class="absolute inset-0 w-full h-full p-6 md:p-12 resize-none font-serif text-base md:text-lg text-slate-800 leading-loose focus:outline-none bg-amber-50/20 view-hidden z-10" placeholder="Begin writing or editing your chapter prose manually here..."></textarea>
+                    <div id="chapter-viewer" class="absolute inset-0 w-full h-full p-6 md:p-12 overflow-y-auto font-serif text-base md:text-lg text-slate-800 leading-loose whitespace-pre-wrap max-w-4xl mx-auto"></div>
+                </div>
+            </div>
+
+            <!-- Right Side: AI Co-writer Studio Chat -->
+            <div class="w-full lg:w-2/5 xl:w-1/3 flex flex-col bg-slate-50 h-[48vh] lg:h-full border-t lg:border-t-0 border-slate-200">
+                <!-- Chat Header -->
+                <div class="px-5 py-3.5 border-b border-slate-200/80 bg-white flex items-center justify-between shrink-0">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                            <i class="fas fa-wand-magic-sparkles text-sm"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm">AI Co-Author</h3>
+                            <p class="text-[11px] text-slate-400">Context-aware narrative engine</p>
+                        </div>
+                    </div>
+                    <span id="ai-status" class="text-xs font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 hidden flex items-center gap-1.5">
+                        <i class="fas fa-circle-notch fa-spin text-indigo-500"></i> Writing prose...
+                    </span>
+                </div>
+                
+                <!-- Chat History -->
+                <div id="chat-history" class="flex-grow overflow-y-auto p-4 md:p-5 space-y-4">
+                    <!-- Chat messages injected here -->
+                </div>
+
+                <!-- Prompt Input Area -->
+                <div class="p-4 border-t border-slate-200/80 bg-white shrink-0">
+                    <div class="relative flex items-end gap-2 bg-slate-50 border border-slate-200/90 rounded-2xl p-2 focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-500 focus-within:bg-white transition">
+                        <textarea id="chat-input" placeholder="Direct the next scene (e.g., 'Have Elena discover the hidden letter inside the clockwork desk...')" class="flex-grow resize-none bg-transparent border-0 p-2 focus:outline-none text-sm text-slate-800 h-[64px] md:h-[76px] leading-relaxed"></textarea>
+                        <button id="sendChatBtn" disabled class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white rounded-xl w-11 h-11 flex items-center justify-center transition shadow-sm shrink-0">
+                            <i class="fas fa-paper-plane text-sm"></i>
+                        </button>
+                    </div>
+                    <div class="flex justify-between items-center mt-2 px-1 text-[11px] text-slate-400">
+                        <span><kbd class="px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200 font-sans">Enter</kbd> to send, <kbd class="px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200 font-sans">Shift+Enter</kbd> for new line</span>
+                        <span id="active-model-badge" class="font-mono text-[10px] text-slate-500 truncate max-w-[160px]">openai/gpt-4o-mini</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 4: SETTINGS -->
+        <div id="view-settings" class="absolute inset-0 overflow-y-auto p-6 md:p-10 view-hidden animate-view">
+            <div class="max-w-2xl mx-auto w-full">
+                <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200/80">
+                    <div class="flex items-center gap-3.5 mb-6 pb-5 border-b border-slate-100">
+                        <div class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
+                            <i class="fas fa-sliders"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-900">Studio Configuration</h2>
+                            <p class="text-xs text-slate-500">Configure your OpenRouter API connection & model preferences</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-800 mb-2">OpenRouter API Key</label>
+                            <div class="relative">
+                                <input type="password" id="api-key-input" placeholder="sk-or-v1-..." class="w-full p-3.5 pr-11 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none text-sm font-mono transition">
+                                <button type="button" id="toggleApiKeyVis" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                    <i class="far fa-eye"></i>
+                                </button>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-2 flex items-center gap-1.5">
+                                <i class="fas fa-shield-halved text-emerald-500"></i> Synced privately to your personal cloud profile & browser.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-800 mb-2">Model Identifier (Slug)</label>
+                            <input type="text" id="model-slug-input" placeholder="e.g., openai/gpt-4o-mini" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none font-mono text-sm transition">
+                            <p class="text-xs text-slate-500 mt-1.5 mb-3">Choose any model slug supported by OpenRouter:</p>
+                            <div class="flex flex-wrap gap-2 text-xs">
+                                <button type="button" class="model-preset bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 border border-slate-200 px-3 py-1.5 rounded-lg font-mono cursor-pointer transition">openai/gpt-4o-mini</button>
+                                <button type="button" class="model-preset bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 border border-slate-200 px-3 py-1.5 rounded-lg font-mono cursor-pointer transition">anthropic/claude-3.5-sonnet</button>
+                                <button type="button" class="model-preset bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 border border-slate-200 px-3 py-1.5 rounded-lg font-mono cursor-pointer transition">meta-llama/llama-3.1-8b-instruct</button>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-indigo-50/70 p-4 rounded-2xl border border-indigo-100">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-900 mb-1 flex items-center gap-1.5">
+                                <i class="fas fa-brain text-indigo-500"></i> Active AI Engine & System Prompt
+                            </h4>
+                            <p class="text-xs text-indigo-800/80 leading-relaxed">
+                                The AI engine is locked to your original novelist configuration: instructing it to write natural, engaging human-like prose, avoid AI conversational clichés, and seamlessly weave your book synopsis and prior chapters into each new scene.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 pt-6 border-t border-slate-100 flex justify-end gap-3">
+                        <button id="saveSettingsBtn" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-6 py-2.5 rounded-xl font-medium transition shadow-md shadow-indigo-600/20 flex items-center gap-2">
+                            <i class="fas fa-check"></i> Save Configuration
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ================= CUSTOM SITE-HANDLED MODAL DIALOG (NO BROWSER PROMPTS/CONFIRMS) ================= -->
+    <div id="custom-modal-backdrop" class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 view-hidden">
+        <div id="custom-modal-box" class="bg-white rounded-3xl max-w-md w-full p-6 md:p-7 shadow-2xl border border-slate-100 animate-modal">
+            <div class="flex items-start gap-4">
+                <div id="modal-icon-container" class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 text-lg">
+                    <i id="modal-icon" class="fas fa-feather"></i>
+                </div>
+                <div class="flex-grow">
+                    <h3 id="modal-title" class="text-lg font-bold text-slate-900 mb-1">Modal Title</h3>
+                    <p id="modal-description" class="text-sm text-slate-500 leading-relaxed mb-4">Description text goes here.</p>
+                    <div id="modal-input-wrapper" class="mb-4 view-hidden">
+                        <input id="modal-input" type="text" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none text-sm text-slate-800 transition" placeholder="Enter value...">
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2.5 mt-4 pt-3 border-t border-slate-100">
+                <button id="modal-cancel-btn" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition">Cancel</button>
+                <button id="modal-confirm-btn" class="px-5 py-2 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= CUSTOM SITE TOAST CONTAINER (NO BROWSER ALERTS) ================= -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none"></div>
+
+    <!-- ================= APPLICATION & FIREBASE SCRIPT ================= -->
+    <script type="module">
+        // --- Firebase SDK Imports (v11.6.1) ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getStorage, ref as storageRef, uploadString, getBytes } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        // --- User Provided Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyA2Hi2rck9ezOsPvm-QERc1H89BO5vUcDk",
+            authDomain: "autoauthor-21f75.firebaseapp.com",
+            projectId: "autoauthor-21f75",
+            storageBucket: "autoauthor-21f75.firebasestorage.app",
+            messagingSenderId: "890136810049",
+            appId: "1:890136810049:web:a5093c92194f4172f0ecc0"
+        };
+
+        // Initialize Firebase Auth & Storage
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const storage = getStorage(app);
+        const googleProvider = new GoogleAuthProvider();
+
+        // --- Constants & Keys ---
+        const STORAGE_KEY_BOOKS = 'ai_book_writer_books';
+        const STORAGE_KEY_SETTINGS = 'ai_book_writer_settings';
+
+        // --- Default Settings ---
+        let settings = {
+            apiKey: '',
+            modelSlug: 'openai/gpt-4o-mini'
+        };
+
+        // --- State ---
+        let currentUser = null;
+        let books = [];
+        let currentView = 'bookshelf'; // bookshelf, book, chapter, settings
+        let activeBookId = null;
+        let activeChapterId = null;
+        let isEditing = false;
+        let isGenerating = false;
+        let syncTimeout = null;
+
+        // =========================================================================
+        // ORIGINAL AI ENGINE CONSTANTS (UNTOUCHED)
+        // =========================================================================
+        // Base System Prompt for Book Writing
+        const BASE_SYSTEM_PROMPT = "You are a professional, highly skilled novelist. Write natural, engaging human-like prose. Avoid AI clichés like 'Here is the next part' or 'Let's dive in'. Do not summarize unless asked. Follow the user's storyline instructions strictly but expand them into rich narrative prose.";
+
+        // --- DOM Elements ---
+        const views = {
+            bookshelf: document.getElementById('view-bookshelf'),
+            book: document.getElementById('view-book'),
+            chapter: document.getElementById('view-chapter'),
+            settings: document.getElementById('view-settings')
+        };
+        const backBtn = document.getElementById('backBtn');
+        const logoBtn = document.getElementById('logoBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
+
+        // Auth Elements
+        const authOverlay = document.getElementById('auth-overlay');
+        const authLoading = document.getElementById('auth-loading');
+        const authActions = document.getElementById('auth-actions');
+        const authErrorBox = document.getElementById('auth-error-box');
+        const googleLoginBtn = document.getElementById('googleLoginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userAvatar = document.getElementById('user-avatar');
+        const userName = document.getElementById('user-name');
+        const syncDot = document.getElementById('sync-dot');
+        const syncText = document.getElementById('sync-text');
+
+        // Bookshelf Elements
+        const newBookBtn = document.getElementById('newBookBtn');
+        const emptyNewBookBtn = document.getElementById('emptyNewBookBtn');
+        const bookshelfGrid = document.getElementById('bookshelf-grid');
+        const bookshelfEmpty = document.getElementById('bookshelf-empty');
+
+        // Book Elements
+        const currentBookTitle = document.getElementById('current-book-title');
+        const bookSynopsisInput = document.getElementById('book-synopsis-input');
+        const newChapterBtn = document.getElementById('newChapterBtn');
+        const chaptersList = document.getElementById('chapters-list');
+        const manuscriptPreview = document.getElementById('manuscript-preview');
+        const exportManuscriptBtn = document.getElementById('exportManuscriptBtn');
+        const bookWordCount = document.getElementById('book-word-count');
+
+        // Chapter Elements
+        const writerBookTitle = document.getElementById('writer-book-title');
+        const writerChapterTitle = document.getElementById('writer-chapter-title');
+        const chapterWordCount = document.getElementById('chapter-word-count');
+        const chapterEditor = document.getElementById('chapter-editor');
+        const chapterViewer = document.getElementById('chapter-viewer');
+        const toggleEditBtn = document.getElementById('toggleEditBtn');
+        const copyChapterBtn = document.getElementById('copyChapterBtn');
+        const chatHistory = document.getElementById('chat-history');
+        const chatInput = document.getElementById('chat-input');
+        const sendChatBtn = document.getElementById('sendChatBtn');
+        const aiStatus = document.getElementById('ai-status');
+        const activeModelBadge = document.getElementById('active-model-badge');
+
+        // Settings Elements
+        const apiKeyInput = document.getElementById('api-key-input');
+        const toggleApiKeyVis = document.getElementById('toggleApiKeyVis');
+        const modelSlugInput = document.getElementById('model-slug-input');
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        const modelPresets = document.querySelectorAll('.model-preset');
+
+        // Custom Modal Elements
+        const modalBackdrop = document.getElementById('custom-modal-backdrop');
+        const modalTitle = document.getElementById('modal-title');
+        const modalDescription = document.getElementById('modal-description');
+        const modalInputWrapper = document.getElementById('modal-input-wrapper');
+        const modalInput = document.getElementById('modal-input');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
+        const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+        const modalIcon = document.getElementById('modal-icon');
+        const modalIconContainer = document.getElementById('modal-icon-container');
+
+        // =========================================================================
+        // CUSTOM SITE UI HELPERS (REPLACES BROWSER ALERT / PROMPT / CONFIRM)
+        // =========================================================================
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const styles = {
+                info: 'bg-slate-900 text-white border-slate-800',
+                success: 'bg-emerald-950 text-emerald-100 border-emerald-800/80',
+                error: 'bg-red-950 text-red-100 border-red-800/80'
+            };
+            const icons = {
+                info: 'fa-circle-info text-indigo-400',
+                success: 'fa-circle-check text-emerald-400',
+                error: 'fa-triangle-exclamation text-red-400'
+            };
+
+            toast.className = `pointer-events-auto flex items-center gap-3 p-4 rounded-2xl shadow-xl border text-xs font-medium animate-modal transition duration-300 ${styles[type] || styles.info}`;
+            toast.innerHTML = `
+                <i class="fas ${icons[type] || icons.info} text-base shrink-0"></i>
+                <span class="flex-grow leading-relaxed">${escapeHtml(message)}</span>
+                <button class="text-slate-400 hover:text-white p-1"><i class="fas fa-xmark"></i></button>
+            `;
+
+            toast.querySelector('button').addEventListener('click', () => toast.remove());
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(8px)';
+                setTimeout(() => toast.remove(), 250);
+            }, 4200);
+        }
+
+        function openSiteModal({ title, description, mode = 'prompt', placeholder = '', confirmText = 'Confirm', danger = false }) {
+            return new Promise((resolve) => {
+                modalTitle.textContent = title;
+                modalDescription.textContent = description;
+                modalConfirmBtn.textContent = confirmText;
+
+                if (danger) {
+                    modalConfirmBtn.className = "px-5 py-2 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-700 text-white transition shadow-sm";
+                    modalIconContainer.className = "w-11 h-11 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center shrink-0 text-lg";
+                    modalIcon.className = "fas fa-trash-can";
+                } else {
+                    modalConfirmBtn.className = "px-5 py-2 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm";
+                    modalIconContainer.className = "w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 text-lg";
+                    modalIcon.className = "fas fa-feather-pointed";
+                }
+
+                if (mode === 'prompt') {
+                    modalInputWrapper.classList.remove('view-hidden');
+                    modalInput.value = '';
+                    modalInput.placeholder = placeholder;
+                } else {
+                    modalInputWrapper.classList.add('view-hidden');
+                }
+
+                modalBackdrop.classList.remove('view-hidden');
+                if (mode === 'prompt') setTimeout(() => modalInput.focus(), 60);
+
+                const cleanup = () => {
+                    modalBackdrop.classList.add('view-hidden');
+                    modalConfirmBtn.removeEventListener('click', onConfirm);
+                    modalCancelBtn.removeEventListener('click', onCancel);
+                    modalInput.removeEventListener('keydown', onKey);
+                };
+
+                const onConfirm = () => {
+                    const val = mode === 'prompt' ? modalInput.value : true;
+                    cleanup();
+                    resolve(val);
+                };
+
+                const onCancel = () => {
+                    cleanup();
+                    resolve(null);
+                };
+
+                const onKey = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        onConfirm();
+                    } else if (e.key === 'Escape') {
+                        onCancel();
+                    }
+                };
+
+                modalConfirmBtn.addEventListener('click', onConfirm);
+                modalCancelBtn.addEventListener('click', onCancel);
+                modalInput.addEventListener('keydown', onKey);
+            });
+        }
+
+        // =========================================================================
+        // FIREBASE STORAGE & GOOGLE AUTHENTICATION
+        // =========================================================================
+        function setSyncIndicator(state, label) {
+            if (state === 'syncing') {
+                syncDot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping';
+                syncText.textContent = label || 'Saving to Cloud...';
+            } else if (state === 'saved') {
+                syncDot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+                syncText.textContent = label || 'Cloud Synced';
+            } else if (state === 'error') {
+                syncDot.className = 'w-2 h-2 rounded-full bg-red-400';
+                syncText.textContent = label || 'Local Backup Active';
+            }
+        }
+
+        async function loadDataFromFirebaseStorage() {
+            if (!currentUser) return;
+            setSyncIndicator('syncing', 'Loading library...');
+
+            // Load local fallback settings first
+            const savedSettings = localStorage.getItem(`${STORAGE_KEY_SETTINGS}_${currentUser.uid}`) || localStorage.getItem(STORAGE_KEY_SETTINGS);
+            if (savedSettings) {
+                try {
+                    settings = { ...settings, ...JSON.parse(savedSettings) };
+                } catch (e) { console.error("Error loading settings", e); }
+            }
+
+            try {
+                const userBooksRef = storageRef(storage, `users/${currentUser.uid}/books.json`);
+                const bytes = await getBytes(userBooksRef);
+                const decodedText = new TextDecoder().decode(bytes);
+                const parsed = JSON.parse(decodedText);
+
+                if (Array.isArray(parsed)) {
+                    books = parsed;
+                } else if (parsed && Array.isArray(parsed.books)) {
+                    books = parsed.books;
+                    if (parsed.settings) {
+                        settings = { ...settings, ...parsed.settings };
+                    }
+                }
+                localStorage.setItem(`${STORAGE_KEY_BOOKS}_${currentUser.uid}`, JSON.stringify(books));
+                setSyncIndicator('saved', 'Cloud Synced');
+            } catch (error) {
+                // If file doesn't exist yet in Firebase Storage or rules need setup, check user local cache or migrate initial books
+                if (error.code === 'storage/object-not-found') {
+                    const localUserBooks = localStorage.getItem(`${STORAGE_KEY_BOOKS}_${currentUser.uid}`) || localStorage.getItem(STORAGE_KEY_BOOKS);
+                    books = localUserBooks ? JSON.parse(localUserBooks) : [];
+                    await uploadBooksToFirebaseStorage();
+                } else {
+                    console.warn("Firebase Storage load notice:", error);
+                    const localUserBooks = localStorage.getItem(`${STORAGE_KEY_BOOKS}_${currentUser.uid}`) || localStorage.getItem(STORAGE_KEY_BOOKS);
+                    books = localUserBooks ? JSON.parse(localUserBooks) : [];
+                    setSyncIndicator('error', 'Saved Locally');
+                }
+            }
+
+            activeModelBadge.textContent = settings.modelSlug || 'openai/gpt-4o-mini';
+            renderView(currentView);
+        }
+
+        async function uploadBooksToFirebaseStorage() {
+            if (!currentUser) return;
+            setSyncIndicator('syncing', 'Syncing to Firebase...');
+            try {
+                const userBooksRef = storageRef(storage, `users/${currentUser.uid}/books.json`);
+                const payload = JSON.stringify({
+                    books: books,
+                    settings: settings,
+                    updatedAt: new Date().toISOString()
+                });
+                await uploadString(userBooksRef, payload, 'raw', { contentType: 'application/json' });
+                setSyncIndicator('saved', 'Cloud Synced');
+            } catch (error) {
+                console.error("Error uploading books to Firebase Storage:", error);
+                setSyncIndicator('error', 'Local Backup Saved');
+            }
+        }
+
+        function saveData() {
+            if (!currentUser) return;
+            // Immediate local cache + debounced Firebase Storage upload
+            localStorage.setItem(`${STORAGE_KEY_BOOKS}_${currentUser.uid}`, JSON.stringify(books));
+            setSyncIndicator('syncing', 'Syncing...');
+            clearTimeout(syncTimeout);
+            syncTimeout = setTimeout(() => {
+                uploadBooksToFirebaseStorage();
+            }, 650);
+        }
+
+        function saveSettingsData() {
+            if (!currentUser) return;
+            localStorage.setItem(`${STORAGE_KEY_SETTINGS}_${currentUser.uid}`, JSON.stringify(settings));
+            activeModelBadge.textContent = settings.modelSlug || 'openai/gpt-4o-mini';
+            uploadBooksToFirebaseStorage();
+        }
+
+        function generateId() {
+            return Math.random().toString(36).substr(2, 9);
+        }
+
+        function countWords(str) {
+            if (!str || !str.trim()) return 0;
+            return str.trim().split(/\s+/).length;
+        }
+
+        // --- Helpers ---
+        function getActiveBook() {
+            return books.find(b => b.id === activeBookId);
+        }
+
+        function getActiveChapter() {
+            const book = getActiveBook();
+            return book ? book.chapters.find(c => c.id === activeChapterId) : null;
+        }
+
+        // =========================================================================
+        // ORIGINAL AI CONTEXT HELPER (UNTOUCHED)
+        // =========================================================================
+        function getPreviousChaptersContext(book, currentChapterId) {
+            const currentIndex = book.chapters.findIndex(c => c.id === currentChapterId);
+            if (currentIndex <= 0) return "";
+
+            let contextString = "PREVIOUS CHAPTERS CONTEXT:\n";
+            for (let i = 0; i < currentIndex; i++) {
+                const prevChap = book.chapters[i];
+                contextString += `--- ${prevChap.title} ---\n${prevChap.content || '(Empty)'}\n\n`;
+            }
+            return contextString;
+        }
+
+        // --- View Management ---
+        function renderView(viewName) {
+            currentView = viewName;
+            
+            // Hide all views
+            Object.values(views).forEach(v => v.classList.add('view-hidden'));
+            
+            // Show selected view
+            if (views[viewName]) {
+                views[viewName].classList.remove('view-hidden');
+            }
+
+            // Update Header buttons
+            if (viewName === 'bookshelf') {
+                backBtn.classList.add('view-hidden');
+                settingsBtn.classList.remove('view-hidden');
+                renderBookshelf();
+            } else if (viewName === 'settings') {
+                backBtn.classList.remove('view-hidden');
+                settingsBtn.classList.add('view-hidden');
+                populateSettings();
+            } else if (viewName === 'book') {
+                backBtn.classList.remove('view-hidden');
+                settingsBtn.classList.remove('view-hidden');
+                renderBookDetails();
+            } else if (viewName === 'chapter') {
+                backBtn.classList.remove('view-hidden');
+                settingsBtn.classList.remove('view-hidden');
+                renderChapterWriter();
+            }
+        }
+
+        function handleBack() {
+            if (currentView === 'chapter') {
+                renderView('book');
+            } else if (currentView === 'book' || currentView === 'settings') {
+                renderView('bookshelf');
+            }
+        }
+
+        // --- Bookshelf Logic ---
+        function renderBookshelf() {
+            bookshelfGrid.innerHTML = '';
+            
+            if (books.length === 0) {
+                bookshelfEmpty.classList.remove('view-hidden');
+                bookshelfGrid.classList.add('view-hidden');
+                return;
+            }
+
+            bookshelfEmpty.classList.add('view-hidden');
+            bookshelfGrid.classList.remove('view-hidden');
+
+            books.forEach(book => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-6 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 border border-slate-200/80 transition-all duration-200 flex flex-col group cursor-pointer relative overflow-hidden";
+                
+                const synopsisText = book.synopsis ? book.synopsis : "No synopsis written yet. Click to open and outline your novel.";
+                const totalWords = book.chapters.reduce((sum, ch) => sum + countWords(ch.content), 0);
+                
+                card.innerHTML = `
+                    <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4 group-hover:bg-indigo-600 group-hover:text-white transition">
+                        <i class="fas fa-book-bookmark"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-2 truncate" title="${escapeHtml(book.title)}">${escapeHtml(book.title)}</h3>
+                    <p class="text-slate-500 text-sm mb-6 line-clamp-3 flex-grow leading-relaxed">${escapeHtml(synopsisText)}</p>
+                    <div class="flex justify-between items-center text-xs text-slate-400 pt-4 border-t border-slate-100">
+                        <div class="flex items-center gap-3 font-medium text-slate-500">
+                            <span><i class="far fa-file-lines mr-1 text-indigo-400"></i>${book.chapters.length} Chapters</span>
+                            <span>•</span>
+                            <span>${totalWords.toLocaleString()} words</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button class="delete-book text-slate-400 hover:text-red-600 hover:bg-red-50 w-8 h-8 rounded-lg flex items-center justify-center transition" data-id="${book.id}" title="Delete Book">
+                                <i class="fas fa-trash-can"></i>
+                            </button>
+                            <button class="open-book text-indigo-600 font-semibold hover:underline flex items-center gap-1 pl-1" data-id="${book.id}">
+                                Open <i class="fas fa-chevron-right text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                card.addEventListener('click', (e) => {
+                    if (!e.target.closest('.delete-book')) {
+                        activeBookId = book.id;
+                        renderView('book');
+                    }
+                });
+
+                bookshelfGrid.appendChild(card);
+            });
+
+            // Attach delete listeners using custom modal
+            document.querySelectorAll('.delete-book').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const id = e.currentTarget.dataset.id;
+                    const targetBook = books.find(b => b.id === id);
+                    const confirmed = await openSiteModal({
+                        title: 'Delete Novel?',
+                        description: `Are you sure you want to permanently delete "${targetBook ? targetBook.title : 'this book'}" and all its chapters? This cannot be undone.`,
+                        mode: 'confirm',
+                        confirmText: 'Delete Novel',
+                        danger: true
+                    });
+                    if (confirmed) {
+                        books = books.filter(b => b.id !== id);
+                        saveData();
+                        renderBookshelf();
+                        showToast('Book deleted from your bookshelf.', 'info');
+                    }
+                });
+            });
+        }
+
+        async function createNewBook() {
+            const title = await openSiteModal({
+                title: 'Start a New Book',
+                description: 'Give your new manuscript a working title. You can start adding chapters right away.',
+                mode: 'prompt',
+                placeholder: 'e.g., The Clockwork Horizon',
+                confirmText: 'Create Book'
+            });
+            if (title && title.trim()) {
+                const newBook = { id: generateId(), title: title.trim(), synopsis: '', chapters: [] };
+                books.push(newBook);
+                saveData();
+                activeBookId = newBook.id;
+                renderView('book');
+                showToast(`Created "${newBook.title}"`, 'success');
+            }
+        }
+
+        // --- Book Details Logic ---
+        function renderBookDetails() {
+            const book = getActiveBook();
+            if (!book) { renderView('bookshelf'); return; }
+
+            currentBookTitle.textContent = book.title;
+            bookSynopsisInput.value = book.synopsis;
+
+            const totalWords = book.chapters.reduce((acc, c) => acc + countWords(c.content), 0);
+            bookWordCount.textContent = `${totalWords.toLocaleString()} words`;
+
+            // Render Chapters List
+            chaptersList.innerHTML = '';
+            if (book.chapters.length === 0) {
+                chaptersList.innerHTML = `
+                    <div class="text-center py-8 px-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/50">
+                        <p class="text-xs text-slate-400">No chapters created yet. Click "Add Chapter" above to begin.</p>
+                    </div>
+                `;
+            } else {
+                book.chapters.forEach((chapter, index) => {
+                    const words = countWords(chapter.content);
+                    const item = document.createElement('div');
+                    item.className = "flex items-center justify-between group p-3 bg-slate-50/70 hover:bg-indigo-50/60 rounded-xl border border-slate-200/60 hover:border-indigo-200 transition cursor-pointer";
+                    item.dataset.id = chapter.id;
+                    item.innerHTML = `
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold shrink-0">${index + 1}</div>
+                            <div class="truncate">
+                                <span class="text-sm font-semibold text-slate-800 block truncate" title="${escapeHtml(chapter.title)}">${escapeHtml(chapter.title)}</span>
+                                <span class="text-[11px] text-slate-400">${words.toLocaleString()} words</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button class="delete-chapter text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-1.5 rounded-lg hover:bg-red-50" data-id="${chapter.id}" title="Delete Chapter">
+                                <i class="fas fa-trash-alt text-xs"></i>
+                            </button>
+                            <i class="fas fa-chevron-right text-xs text-slate-300 group-hover:text-indigo-500 pl-1"></i>
+                        </div>
+                    `;
+                    item.addEventListener('click', (e) => {
+                        if (!e.target.closest('.delete-chapter')) {
+                            activeChapterId = chapter.id;
+                            renderView('chapter');
+                        }
+                    });
+                    chaptersList.appendChild(item);
+                });
+            }
+
+            // Attach delete chapter listeners
+            document.querySelectorAll('.delete-chapter').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const chapterId = e.currentTarget.dataset.id;
+                    const confirmed = await openSiteModal({
+                        title: 'Delete Chapter?',
+                        description: 'Are you sure you want to delete this chapter and its prose? This cannot be undone.',
+                        mode: 'confirm',
+                        confirmText: 'Delete Chapter',
+                        danger: true
+                    });
+                    if (confirmed) {
+                        book.chapters = book.chapters.filter(c => c.id !== chapterId);
+                        saveData();
+                        renderBookDetails();
+                        showToast('Chapter removed.', 'info');
+                    }
+                });
+            });
+
+            // Render Manuscript Preview
+            manuscriptPreview.innerHTML = '';
+            if (book.chapters.length === 0) {
+                manuscriptPreview.innerHTML = `
+                    <div class="text-center py-24 text-slate-400">
+                        <i class="fas fa-feather text-3xl mb-3 opacity-40 block"></i>
+                        <p class="italic font-serif text-lg">Your manuscript preview will appear here as you write chapters...</p>
+                    </div>
+                `;
+            } else {
+                const wrapper = document.createElement('div');
+                wrapper.className = "max-w-2xl mx-auto";
+                book.chapters.forEach(chapter => {
+                    const section = document.createElement('div');
+                    section.className = "mb-14 pb-10 border-b border-slate-200/60 last:border-b-0";
+                    
+                    const contentHtml = chapter.content 
+                        ? `<div class="whitespace-pre-wrap text-slate-800 leading-loose font-serif text-lg">${escapeHtml(chapter.content)}</div>`
+                        : `<p class="text-slate-400 italic font-sans text-sm">This chapter is currently blank.</p>`;
+                        
+                    section.innerHTML = `
+                        <h2 class="text-2xl font-bold mb-6 font-sans text-slate-900 tracking-tight">${escapeHtml(chapter.title)}</h2>
+                        ${contentHtml}
+                    `;
+                    wrapper.appendChild(section);
+                });
+                manuscriptPreview.appendChild(wrapper);
+            }
+        }
+
+        function handleSynopsisChange(e) {
+            const book = getActiveBook();
+            if (book) {
+                book.synopsis = e.target.value;
+                saveData();
+            }
+        }
+
+        async function createNewChapter() {
+            const book = getActiveBook();
+            if (!book) return;
+
+            const nextNum = book.chapters.length + 1;
+            const title = await openSiteModal({
+                title: 'New Chapter',
+                description: 'Enter a title for this chapter:',
+                mode: 'prompt',
+                placeholder: `Chapter ${nextNum}: The Beginning`,
+                confirmText: 'Add Chapter'
+            });
+            if (title && title.trim()) {
+                const newChapter = {
+                    id: generateId(),
+                    title: title.trim(),
+                    content: '',
+                    messages: [{ role: 'system', content: BASE_SYSTEM_PROMPT }]
+                };
+                book.chapters.push(newChapter);
+                saveData();
+                renderBookDetails();
+                showToast(`Added "${newChapter.title}"`, 'success');
+            }
+        }
+        
+        function exportManuscript() {
+            const book = getActiveBook();
+            if (!book) return;
+            
+            let text = `${book.title.toUpperCase()}\n\n`;
+            text += `Synopsis:\n${book.synopsis}\n\n`;
+            text += `=========================\n\n`;
+            
+            book.chapters.forEach(chapter => {
+                text += `\n\n### ${chapter.title} ###\n\n`;
+                text += chapter.content || "[Empty Chapter]";
+            });
+            
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${book.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_manuscript.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Manuscript exported as .txt', 'success');
+        }
+
+        // --- Chapter Writer Logic ---
+        function renderChapterWriter() {
+            const book = getActiveBook();
+            const chapter = getActiveChapter();
+            if (!book || !chapter) { renderView('bookshelf'); return; }
+
+            writerBookTitle.textContent = book.title;
+            writerChapterTitle.textContent = chapter.title;
+            activeModelBadge.textContent = settings.modelSlug || 'openai/gpt-4o-mini';
+
+            // Reset editing state on load
+            isEditing = false;
+            updateEditorState();
+            
+            // Populate content
+            chapterEditor.value = chapter.content;
+            updateViewerContent(chapter.content);
+
+            renderChatHistory();
+        }
+        
+        function updateViewerContent(content) {
+            chapterWordCount.textContent = `${countWords(content).toLocaleString()} words`;
+            if (content) {
+                chapterViewer.innerHTML = escapeHtml(content);
+            } else {
+                chapterViewer.innerHTML = `
+                    <div class="text-center py-20 text-slate-400 font-sans">
+                        <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-feather-pointed"></i>
+                        </div>
+                        <p class="text-sm font-medium text-slate-500 mb-1">The page is currently blank</p>
+                        <p class="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">Use the AI Co-Author prompt panel on the right to direct the opening scene, or switch to Manual Edit.</p>
+                    </div>
+                `;
+            }
+            // scroll viewer to bottom to show newest text
+            chapterViewer.scrollTop = chapterViewer.scrollHeight;
+        }
+        
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+
+        function toggleEditMode() {
+            isEditing = !isEditing;
+            updateEditorState();
+        }
+
+        function updateEditorState() {
+            const chapter = getActiveChapter();
+            if (!chapter) return;
+
+            if (isEditing) {
+                toggleEditBtn.className = "px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition bg-indigo-600 text-white shadow-sm";
+                toggleEditBtn.innerHTML = '<i class="fas fa-check"></i> <span>Done Editing</span>';
+                
+                chapterViewer.classList.add('view-hidden');
+                chapterEditor.classList.remove('view-hidden');
+                chapterEditor.value = chapter.content;
+                chapterEditor.focus();
+            } else {
+                toggleEditBtn.className = "px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition bg-slate-100 text-slate-700 hover:bg-slate-200";
+                toggleEditBtn.innerHTML = '<i class="fas fa-pen-to-square"></i> <span>Manual Edit</span>';
+                
+                chapterEditor.classList.add('view-hidden');
+                chapterViewer.classList.remove('view-hidden');
+                updateViewerContent(chapter.content);
+            }
+        }
+
+        function handleEditorChange(e) {
+            const chapter = getActiveChapter();
+            if (chapter) {
+                chapter.content = e.target.value;
+                chapterWordCount.textContent = `${countWords(chapter.content).toLocaleString()} words`;
+                saveData();
+            }
+        }
+
+        function renderChatHistory() {
+            const chapter = getActiveChapter();
+            if (!chapter) return;
+
+            chatHistory.innerHTML = '';
+            
+            const visibleMessages = chapter.messages.filter(m => m.role !== 'system');
+            
+            if (visibleMessages.length === 0) {
+                chatHistory.innerHTML = `
+                    <div class="p-5 bg-indigo-50/70 rounded-2xl border border-indigo-100 text-indigo-900 text-xs leading-relaxed">
+                        <div class="font-bold mb-1 flex items-center gap-1.5 text-indigo-700">
+                            <i class="fas fa-wand-magic-sparkles"></i> Ready to Co-Write
+                        </div>
+                        Describe what should happen next in this chapter. Your AI Co-Author automatically reads your Book Synopsis and all previous chapters for continuity.
+                    </div>
+                `;
+                return;
+            }
+
+            visibleMessages.forEach(msg => {
+                const msgWrapper = document.createElement('div');
+                msgWrapper.className = `flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`;
+                
+                const bubbleStyle = msg.role === 'user' 
+                    ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-xs shadow-sm' 
+                    : 'bg-white border border-slate-200/90 text-slate-800 rounded-2xl rounded-tl-xs shadow-sm';
+                    
+                const roleText = msg.role === 'user' ? 'Your Direction' : 'Generated Prose Added to Chapter';
+
+                msgWrapper.innerHTML = `
+                    <div class="max-w-[90%] p-3.5 ${bubbleStyle}">
+                        <p class="text-xs md:text-sm whitespace-pre-wrap leading-relaxed ${msg.role === 'assistant' ? 'font-serif' : ''}">${escapeHtml(msg.content)}</p>
+                    </div>
+                    <span class="text-[10px] font-medium text-slate-400 mt-1 px-1">${roleText}</span>
+                `;
+                chatHistory.appendChild(msgWrapper);
+            });
+            
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function setGeneratingState(generating) {
+            isGenerating = generating;
+            chatInput.disabled = generating;
+            sendChatBtn.disabled = generating || !chatInput.value.trim();
+            
+            if (generating) {
+                aiStatus.classList.remove('hidden');
+            } else {
+                aiStatus.classList.add('hidden');
+                setTimeout(() => chatInput.focus(), 100);
+            }
+        }
+
+        // =========================================================================
+        // ORIGINAL AI ENGINE & OPENROUTER FETCH LOGIC (UNTOUCHED)
+        // =========================================================================
+        async function handleSendMessage() {
+            const userPrompt = chatInput.value.trim();
+            if (!userPrompt || isGenerating) return;
+
+            if (!settings.apiKey) {
+                showToast("Please set your OpenRouter API Key in Settings first.", "error");
+                renderView('settings');
+                return;
+            }
+
+            const book = getActiveBook();
+            const chapter = getActiveChapter();
+            if (!book || !chapter) return;
+
+            // 1. Update UI with user message immediately
+            const newUserMessage = { role: 'user', content: userPrompt };
+            chapter.messages.push(newUserMessage);
+            chatInput.value = '';
+            renderChatHistory();
+            setGeneratingState(true);
+
+            // 2. Build Context
+            let contextString = `BOOK SYNOPSIS:\n${book.synopsis || 'No synopsis provided.'}\n\n`;
+            contextString += getPreviousChaptersContext(book, chapter.id);
+
+            // 3. Prepare messages for OpenRouter
+            // We inject the context dynamically into the system prompt for the API call,
+            // but we don't save this massive context block into the permanent chapter.messages array
+            // to save localStorage space and token limits on subsequent calls if it changes.
+            const apiMessages = [
+                { role: 'system', content: chapter.messages[0].content }, // Base prompt
+                { role: 'system', content: `CRITICAL STORY CONTEXT. USE THIS TO INFORM YOUR WRITING. MAINTAIN CONTINUITY:\n${contextString}` },
+                ...chapter.messages.slice(1).map(m => ({ role: m.role, content: m.content })), // Historical chat
+                { role: 'user', content: `Based on the context, write the next part of this chapter following this direction: ${userPrompt}. 
+IMPORTANT RULES: 
+1. Output ONLY the raw story prose.
+2. DO NOT output conversational filler like "Here is the next section" or "Let me know if you want changes".
+3. DO NOT output markdown code blocks wrapping the text. Just raw text.` }
+            ];
+
+            try {
+                // 4. Call OpenRouter API
+                const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${settings.apiKey}`,
+                        "HTTP-Referer": window.location.href, // Recommended by OpenRouter
+                        "X-Title": "AutoAuthor AI", // Recommended by OpenRouter
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: settings.modelSlug,
+                        messages: apiMessages,
+                        temperature: 0.7, // Good for creative writing
+                        top_p: 0.9,
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error?.message || `API request failed with status ${response.status}`);
+                }
+
+                const data = await response.json();
+                let aiResponseText = data.choices[0].message.content;
+                
+                // Clean up potential markdown blocks if the AI misbehaved
+                aiResponseText = aiResponseText.replace(/^```[a-z]*\n/gm, '').replace(/```$/gm, '').trim();
+
+                // 5. Update State and UI
+                const newAiMessage = { role: 'assistant', content: aiResponseText };
+                chapter.messages.push(newAiMessage);
+                
+                // Append text to chapter content
+                chapter.content = chapter.content ? `${chapter.content}\n\n${aiResponseText}` : aiResponseText;
+                
+                // If in manual edit mode, update the textarea value so we don't lose the new text
+                if (isEditing) {
+                    chapterEditor.value = chapter.content;
+                } else {
+                    updateViewerContent(chapter.content);
+                }
+
+                saveData();
+                renderChatHistory();
+
+            } catch (error) {
+                console.error("API Error:", error);
+                showToast(`Error communicating with AI: ${error.message}`, 'error');
+                // Remove the user message if the API call failed so they can try again easily
+                chapter.messages.pop();
+                renderChatHistory();
+                chatInput.value = userPrompt; // restore input
+            } finally {
+                setGeneratingState(false);
+            }
+        }
+
+        // --- Settings Logic ---
+        function populateSettings() {
+            apiKeyInput.value = settings.apiKey || '';
+            modelSlugInput.value = settings.modelSlug || '';
+        }
+
+        function handleSaveSettings() {
+            settings.apiKey = apiKeyInput.value.trim();
+            settings.modelSlug = modelSlugInput.value.trim() || 'openai/gpt-4o-mini';
+            saveSettingsData();
+            showToast('Configuration saved and synced.', 'success');
+            renderView('bookshelf');
+        }
+
+        // --- Event Listeners ---
+        function setupEventListeners() {
+            // Google Sign-In
+            googleLoginBtn.addEventListener('click', async () => {
+                authErrorBox.classList.add('view-hidden');
+                try {
+                    await signInWithPopup(auth, googleProvider);
+                } catch (err) {
+                    console.error("Google sign-in error:", err);
+                    authErrorBox.textContent = `Sign-in failed: ${err.message}`;
+                    authErrorBox.classList.remove('view-hidden');
+                }
+            });
+
+            // Sign Out
+            logoutBtn.addEventListener('click', async () => {
+                const confirmed = await openSiteModal({
+                    title: 'Sign Out?',
+                    description: 'Your books are safely stored in your cloud storage. Would you like to sign out of your studio session?',
+                    mode: 'confirm',
+                    confirmText: 'Sign Out'
+                });
+                if (confirmed) {
+                    await signOut(auth);
+                }
+            });
+
+            // Global Nav
+            logoBtn.addEventListener('click', () => { if (currentView !== 'bookshelf') renderView('bookshelf'); });
+            settingsBtn.addEventListener('click', () => renderView('settings'));
+            backBtn.addEventListener('click', handleBack);
+
+            // Bookshelf
+            newBookBtn.addEventListener('click', createNewBook);
+            emptyNewBookBtn.addEventListener('click', createNewBook);
+
+            // Book Details
+            bookSynopsisInput.addEventListener('input', handleSynopsisChange);
+            newChapterBtn.addEventListener('click', createNewChapter);
+            exportManuscriptBtn.addEventListener('click', exportManuscript);
+
+            // Chapter Writer
+            toggleEditBtn.addEventListener('click', toggleEditMode);
+            chapterEditor.addEventListener('input', handleEditorChange);
+            copyChapterBtn.addEventListener('click', () => {
+                const chapter = getActiveChapter();
+                if (!chapter || !chapter.content) {
+                    showToast('Chapter is currently empty.', 'info');
+                    return;
+                }
+                const temp = document.createElement('textarea');
+                temp.value = chapter.content;
+                document.body.appendChild(temp);
+                temp.select();
+                document.execCommand('copy');
+                document.body.removeChild(temp);
+                showToast('Chapter prose copied to clipboard!', 'success');
+            });
+            
+            // Chat
+            sendChatBtn.addEventListener('click', handleSendMessage);
+            chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                }
+                setTimeout(() => {
+                    sendChatBtn.disabled = isGenerating || !chatInput.value.trim();
+                }, 10);
+            });
+            chatInput.addEventListener('input', () => {
+                sendChatBtn.disabled = isGenerating || !chatInput.value.trim();
+            });
+
+            // Settings
+            saveSettingsBtn.addEventListener('click', handleSaveSettings);
+            toggleApiKeyVis.addEventListener('click', () => {
+                const isPwd = apiKeyInput.type === 'password';
+                apiKeyInput.type = isPwd ? 'text' : 'password';
+                toggleApiKeyVis.innerHTML = isPwd ? '<i class="far fa-eye-slash"></i>' : '<i class="far fa-eye"></i>';
+            });
+            modelPresets.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    modelSlugInput.value = e.target.textContent;
+                });
+            });
+            
+            window.addEventListener('resize', () => {
+                if (currentView === 'chapter' && chatHistory) {
+                    chatHistory.scrollTop = chatHistory.scrollHeight;
+                }
+            });
+        }
+
+        // --- Initialize App & Auth Listener ---
+        function init() {
+            setupEventListeners();
+
+            onAuthStateChanged(auth, async (user) => {
+                authLoading.classList.add('view-hidden');
+                if (user) {
+                    currentUser = user;
+                    authOverlay.classList.add('view-hidden');
+                    userName.textContent = user.displayName || user.email || 'Author';
+                    if (user.photoURL) {
+                        userAvatar.src = user.photoURL;
+                    }
+                    await loadDataFromFirebaseStorage();
+                } else {
+                    currentUser = null;
+                    books = [];
+                    authOverlay.classList.remove('view-hidden');
+                    authActions.classList.remove('view-hidden');
+                }
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>
