@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: {
@@ -29,8 +30,11 @@
             background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-            background: rgba(148, 163, 184, 0.4);
+            background: rgba(148, 163, 184, 0.35);
             border-radius: 9999px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.18);
         }
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(100, 116, 139, 0.7);
@@ -63,6 +67,16 @@
             }
         }
 
+        @keyframes quillFloat {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-6px) rotate(-6deg); }
+        }
+
+        @keyframes shimmerBar {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(200%); }
+        }
+
         .animate-view {
             animation: fadeScaleIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
@@ -71,34 +85,54 @@
             animation: modalPop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        /* Paper texture feel for editor */
+        .animate-quill {
+            animation: quillFloat 2.4s ease-in-out infinite;
+        }
+
+        .shimmer-bar::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            width: 50%;
+            background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.8), transparent);
+            animation: shimmerBar 1.4s infinite;
+        }
+
+        /* Paper texture feel for editor (Light vs True AMOLED Black) */
         .paper-canvas {
             background-color: #fdfcf9;
             background-image: radial-gradient(#e5e7eb 0.5px, transparent 0.5px);
             background-size: 24px 24px;
+            transition: background-color 0.25s ease;
+        }
+
+        .dark .paper-canvas {
+            background-color: #000000;
+            background-image: radial-gradient(#18181b 0.75px, transparent 0.75px);
+            background-size: 24px 24px;
         }
     </style>
 </head>
-<body class="bg-slate-50 font-sans h-screen flex flex-col text-slate-800 selection:bg-indigo-500 selection:text-white overflow-hidden">
+<body class="bg-slate-50 dark:bg-black font-sans h-screen flex flex-col text-slate-800 dark:text-zinc-100 selection:bg-indigo-500 selection:text-white overflow-hidden transition-colors duration-200">
 
     <!-- ================= AUTHENTICATION OVERLAY (GOOGLE SIGN-IN REQUIRED) ================= -->
-    <div id="auth-overlay" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4 overflow-hidden">
+    <div id="auth-overlay" class="fixed inset-0 z-50 bg-black flex items-center justify-center p-4 overflow-hidden">
         <!-- Ambient Animated Background Blobs -->
-        <div class="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/25 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
-        <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
+        <div class="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
+        <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
 
-        <div class="relative w-full max-w-md bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 md:p-10 shadow-2xl text-center animate-modal">
-            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-500/30">
+        <div class="relative w-full max-w-md bg-zinc-950/90 backdrop-blur-xl border border-zinc-800/90 rounded-3xl p-8 md:p-10 shadow-2xl text-center animate-modal">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-500/30 animate-quill">
                 <i class="fas fa-feather-pointed text-2xl text-white"></i>
             </div>
             <h1 class="text-3xl font-bold text-white tracking-tight mb-2">AutoAuthor AI</h1>
-            <p class="text-slate-400 text-sm mb-8 leading-relaxed">
+            <p class="text-zinc-400 text-sm mb-8 leading-relaxed">
                 Your distraction-free cloud literary studio. Sign in with Google to access and sync your manuscripts across devices.
             </p>
 
-            <div id="auth-loading" class="py-4 text-slate-400 text-sm flex items-center justify-center gap-3">
-                <i class="fas fa-circle-notch fa-spin text-indigo-400 text-lg"></i>
-                <span>Checking authentication status...</span>
+            <div id="auth-loading" class="py-4 text-zinc-300 text-sm flex flex-col items-center justify-center gap-3">
+                <div class="w-48 h-1.5 bg-zinc-900 rounded-full overflow-hidden relative shimmer-bar border border-zinc-800"></div>
+                <span class="text-xs text-zinc-400 tracking-wide">Authenticating studio session...</span>
             </div>
 
             <div id="auth-actions" class="view-hidden space-y-4">
@@ -114,17 +148,30 @@
                 <div id="auth-error-box" class="view-hidden p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs text-left leading-relaxed"></div>
             </div>
 
-            <div class="mt-8 pt-6 border-t border-slate-800/80 flex items-center justify-center gap-2 text-xs text-slate-500">
+            <div class="mt-8 pt-6 border-t border-zinc-900 flex items-center justify-center gap-2 text-xs text-zinc-500">
                 <i class="fas fa-cloud text-indigo-400"></i>
                 <span>Powered by Firebase Cloud Storage</span>
             </div>
         </div>
     </div>
 
+    <!-- ================= CLOUD LIBRARY LOADING OVERLAY ================= -->
+    <div id="studio-loader" class="fixed inset-0 z-40 bg-slate-50/95 dark:bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-6 view-hidden transition-opacity duration-300">
+        <div class="relative w-20 h-20 flex items-center justify-center mb-6">
+            <div class="absolute inset-0 rounded-full border-2 border-indigo-500/20 border-t-indigo-500 animate-spin"></div>
+            <div class="w-12 h-12 rounded-2xl bg-indigo-600/10 dark:bg-indigo-500/15 flex items-center justify-center text-indigo-600 dark:text-indigo-400 animate-quill">
+                <i class="fas fa-feather-pointed text-xl"></i>
+            </div>
+        </div>
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight mb-1">Syncing Literary Studio</h3>
+        <p id="studio-loader-sub" class="text-xs text-slate-500 dark:text-zinc-400 mb-5">Fetching your manuscripts & AI configuration...</p>
+        <div class="w-56 h-1.5 bg-slate-200 dark:bg-zinc-900 rounded-full overflow-hidden relative shimmer-bar"></div>
+    </div>
+
     <!-- ================= TOP NAVIGATION HEADER ================= -->
-    <header class="bg-slate-900/95 backdrop-blur-md text-white px-4 md:px-6 py-3.5 shadow-sm border-b border-slate-800 flex justify-between items-center z-20 shrink-0">
+    <header class="bg-slate-900 dark:bg-black text-white px-4 md:px-6 py-3.5 shadow-sm border-b border-slate-800 dark:border-zinc-900 flex justify-between items-center z-20 shrink-0 transition-colors duration-200">
         <div class="flex items-center gap-3">
-            <button id="backBtn" class="hover:bg-slate-800 active:scale-95 w-9 h-9 rounded-xl flex items-center justify-center transition view-hidden text-slate-300 hover:text-white" title="Go Back">
+            <button id="backBtn" class="hover:bg-slate-800 dark:hover:bg-zinc-900 active:scale-95 w-9 h-9 rounded-xl flex items-center justify-center transition view-hidden text-slate-300 hover:text-white" title="Go Back">
                 <i class="fas fa-arrow-left"></i>
             </button>
             <div class="flex items-center gap-2.5 cursor-pointer group" id="logoBtn">
@@ -139,25 +186,26 @@
             </div>
         </div>
 
-        <!-- Right Side Status, Settings, & User Profile -->
-        <div class="flex items-center gap-2 md:gap-4">
+        <!-- Right Side Status, AMOLED Night Mode Toggle, & User Profile -->
+        <div class="flex items-center gap-2 md:gap-3">
             <!-- Cloud Sync Status Pill -->
-            <div id="sync-indicator" class="hidden sm:flex items-center gap-2 text-xs px-3 py-1.5 rounded-full bg-slate-800/90 border border-slate-700/80 text-slate-300">
+            <div id="sync-indicator" class="hidden sm:flex items-center gap-2 text-xs px-3 py-1.5 rounded-full bg-slate-800/90 dark:bg-zinc-950 border border-slate-700/80 dark:border-zinc-800 text-slate-300 dark:text-zinc-300">
                 <span id="sync-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
                 <span id="sync-text">Cloud Synced</span>
             </div>
 
-            <button id="settingsBtn" class="hover:bg-slate-800 active:scale-95 px-3 py-2 rounded-xl transition flex items-center gap-2 text-slate-300 hover:text-white text-sm font-medium" title="AI & Model Settings">
-                <i class="fas fa-sliders"></i>
-                <span class="hidden md:inline">AI Settings</span>
+            <!-- True AMOLED Night Mode Toggle -->
+            <button id="themeToggleBtn" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/90 dark:bg-zinc-950 hover:bg-slate-700 dark:hover:bg-zinc-900 border border-slate-700/80 dark:border-zinc-800 text-xs font-medium text-slate-200 dark:text-zinc-200 transition active:scale-95 cursor-pointer" title="Toggle True Black AMOLED Night Mode">
+                <i id="theme-icon" class="fas fa-moon text-indigo-400"></i>
+                <span id="theme-label" class="hidden md:inline">AMOLED Night</span>
             </button>
 
-            <div class="h-5 w-[1px] bg-slate-800 hidden sm:block"></div>
+            <div class="h-5 w-[1px] bg-slate-800 dark:bg-zinc-800 hidden sm:block"></div>
 
             <!-- User Profile & Sign Out -->
             <div id="user-profile-bar" class="flex items-center gap-2.5 pl-1">
-                <img id="user-avatar" src="https://placehold.co/40x40/4f46e5/ffffff?text=U" alt="Avatar" class="w-8 h-8 rounded-full border border-slate-700 object-cover">
-                <span id="user-name" class="text-xs font-medium text-slate-300 hidden lg:inline max-w-[140px] truncate">Author</span>
+                <img id="user-avatar" src="https://placehold.co/40x40/4f46e5/ffffff?text=U" alt="Avatar" class="w-8 h-8 rounded-full border border-slate-700 dark:border-zinc-800 object-cover">
+                <span id="user-name" class="text-xs font-medium text-slate-300 dark:text-zinc-300 hidden lg:inline max-w-[140px] truncate">Author</span>
                 <button id="logoutBtn" class="hover:bg-red-500/10 hover:text-red-400 text-slate-400 p-2 rounded-xl transition text-xs" title="Sign Out">
                     <i class="fas fa-right-from-bracket"></i>
                 </button>
@@ -166,32 +214,32 @@
     </header>
 
     <!-- ================= MAIN VIEWPORT ================= -->
-    <main class="flex-grow overflow-hidden relative bg-slate-50">
+    <main class="flex-grow overflow-hidden relative bg-slate-50 dark:bg-black transition-colors duration-200">
         
         <!-- VIEW 1: BOOKSHELF -->
         <div id="view-bookshelf" class="absolute inset-0 overflow-y-auto p-6 md:p-10 animate-view">
             <div class="max-w-6xl mx-auto w-full">
                 <!-- Hero Banner -->
-                <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 pb-6 border-b border-slate-200/80">
+                <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 pb-6 border-b border-slate-200/80 dark:border-zinc-900">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-widest text-indigo-600 mb-1">Personal Cloud Library</p>
-                        <h2 class="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">Your Bookshelf</h2>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mb-1">Personal Cloud Library</p>
+                        <h2 class="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">Your Bookshelf</h2>
                     </div>
-                    <button id="newBookBtn" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-5 py-2.5 rounded-xl font-medium flex items-center justify-center gap-2.5 shadow-md shadow-indigo-600/20 transition cursor-pointer">
+                    <button id="newBookBtn" class="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-5 py-2.5 rounded-xl font-medium flex items-center justify-center gap-2.5 shadow-md shadow-indigo-600/20 transition cursor-pointer">
                         <i class="fas fa-plus text-sm"></i>
                         <span>New Book</span>
                     </button>
                 </div>
 
                 <!-- Empty State -->
-                <div id="bookshelf-empty" class="text-center py-20 px-6 bg-white rounded-3xl border border-slate-200/80 shadow-sm view-hidden max-w-lg mx-auto my-8">
-                    <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-5">
+                <div id="bookshelf-empty" class="text-center py-20 px-6 bg-white dark:bg-black rounded-3xl border border-slate-200/80 dark:border-zinc-800 shadow-sm view-hidden max-w-lg mx-auto my-8">
+                    <div class="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-zinc-950 border dark:border-zinc-800 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto mb-5 animate-quill">
                         <i class="fas fa-book-open text-2xl"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-slate-800 mb-2">Your bookshelf is waiting</h3>
-                    <p class="text-slate-500 text-sm mb-6 leading-relaxed">Create your first novel, outline your overarching plot synopsis, and collaborate with your AI co-author chapter by chapter.</p>
-                    <button id="emptyNewBookBtn" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition inline-flex items-center gap-2">
-                        <i class="fas fa-sparkles text-indigo-400"></i> Start Your First Novel
+                    <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Your bookshelf is waiting</h3>
+                    <p class="text-slate-500 dark:text-zinc-400 text-sm mb-6 leading-relaxed">Create your first novel, outline your overarching plot synopsis, and collaborate with your AI co-author chapter by chapter.</p>
+                    <button id="emptyNewBookBtn" class="bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-zinc-200 text-white dark:text-black px-5 py-2.5 rounded-xl text-sm font-semibold transition inline-flex items-center gap-2">
+                        <i class="fas fa-sparkles text-indigo-400 dark:text-indigo-600"></i> Start Your First Novel
                     </button>
                 </div>
 
@@ -209,32 +257,32 @@
                 <!-- Left Column: Book Meta & Chapter List -->
                 <div class="w-full lg:w-5/12 xl:w-1/3 flex flex-col gap-6">
                     <!-- Book Card -->
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
+                    <div class="bg-white dark:bg-black p-6 rounded-2xl shadow-sm border border-slate-200/80 dark:border-zinc-800">
                         <div class="flex items-start justify-between gap-2 mb-4">
                             <div>
-                                <span class="text-[11px] font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md">Novel Project</span>
-                                <h2 id="current-book-title" class="text-2xl font-bold text-slate-900 mt-2 leading-snug">Book Title</h2>
+                                <span class="text-[11px] font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border dark:border-indigo-900/60 px-2.5 py-1 rounded-md">Novel Project</span>
+                                <h2 id="current-book-title" class="text-2xl font-bold text-slate-900 dark:text-white mt-2 leading-snug">Book Title</h2>
                             </div>
                         </div>
                         <div>
                             <div class="flex justify-between items-center mb-1.5">
-                                <label for="book-synopsis-input" class="block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                <label for="book-synopsis-input" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
                                     Synopsis & Story Bible (AI Context)
                                 </label>
-                                <span class="text-[11px] text-slate-400">Auto-saves</span>
+                                <span class="text-[11px] text-slate-400 dark:text-zinc-500">Auto-saves</span>
                             </div>
-                            <textarea id="book-synopsis-input" class="w-full p-3.5 bg-slate-50/70 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none text-sm text-slate-700 min-h-[160px] resize-y leading-relaxed transition" placeholder="Write a summary of the overarching plot, main characters, tone, and world rules. The AI uses this to keep every chapter consistent."></textarea>
+                            <textarea id="book-synopsis-input" class="w-full p-3.5 bg-slate-50/70 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl focus:bg-white dark:focus:bg-black focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none text-sm text-slate-700 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-600 min-h-[160px] resize-y leading-relaxed transition" placeholder="Write a summary of the overarching plot, main characters, tone, and world rules. The AI uses this to keep every chapter consistent."></textarea>
                         </div>
                     </div>
 
                     <!-- Chapters Card -->
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 flex-grow flex flex-col">
+                    <div class="bg-white dark:bg-black p-6 rounded-2xl shadow-sm border border-slate-200/80 dark:border-zinc-800 flex-grow flex flex-col">
                         <div class="flex justify-between items-center mb-4">
                             <div>
-                                <h3 class="text-lg font-bold text-slate-900">Chapters</h3>
-                                <p class="text-xs text-slate-400">Select a chapter to open the co-writer</p>
+                                <h3 class="text-lg font-bold text-slate-900 dark:text-white">Chapters</h3>
+                                <p class="text-xs text-slate-400 dark:text-zinc-400">Select a chapter to open the co-writer</p>
                             </div>
-                            <button id="newChapterBtn" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition" title="Add Chapter">
+                            <button id="newChapterBtn" class="bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/70 border dark:border-indigo-800/60 text-indigo-600 dark:text-indigo-300 px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition" title="Add Chapter">
                                 <i class="fas fa-plus"></i> Add Chapter
                             </button>
                         </div>
@@ -245,16 +293,16 @@
                 </div>
 
                 <!-- Right Column: Full Manuscript Reader -->
-                <div class="w-full lg:w-7/12 xl:w-2/3 bg-white rounded-2xl shadow-sm border border-slate-200/80 min-h-[650px] flex flex-col overflow-hidden">
-                    <div class="px-6 py-4 bg-slate-50/80 border-b border-slate-200/80 flex flex-wrap justify-between items-center gap-3">
+                <div class="w-full lg:w-7/12 xl:w-2/3 bg-white dark:bg-black rounded-2xl shadow-sm border border-slate-200/80 dark:border-zinc-800 min-h-[650px] flex flex-col overflow-hidden">
+                    <div class="px-6 py-4 bg-slate-50/80 dark:bg-zinc-950 border-b border-slate-200/80 dark:border-zinc-800 flex flex-wrap justify-between items-center gap-3">
                         <div class="flex items-center gap-2.5">
-                            <i class="fas fa-scroll text-indigo-500"></i>
-                            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700">Full Manuscript Preview</h3>
+                            <i class="fas fa-scroll text-indigo-500 dark:text-indigo-400"></i>
+                            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-200">Full Manuscript Preview</h3>
                         </div>
                         <div class="flex items-center gap-3">
-                            <span id="book-word-count" class="text-xs font-medium text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200">0 words</span>
-                            <button id="exportManuscriptBtn" class="text-xs bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-xl font-medium flex items-center gap-2 transition shadow-sm">
-                                <i class="fas fa-download text-indigo-300"></i> Export .txt
+                            <span id="book-word-count" class="text-xs font-medium text-slate-500 dark:text-zinc-300 bg-white dark:bg-black px-3 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-800">0 words</span>
+                            <button id="exportManuscriptBtn" class="text-xs bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white px-3.5 py-2 rounded-xl font-medium flex items-center gap-2 transition shadow-sm">
+                                <i class="fas fa-download text-indigo-300 dark:text-white"></i> Export .txt
                             </button>
                         </div>
                     </div>
@@ -267,26 +315,26 @@
         </div>
 
         <!-- VIEW 3: CHAPTER WRITER & AI CO-WRITER -->
-        <div id="view-chapter" class="absolute inset-0 flex flex-col lg:flex-row overflow-hidden bg-slate-100 view-hidden animate-view">
+        <div id="view-chapter" class="absolute inset-0 flex flex-col lg:flex-row overflow-hidden bg-slate-100 dark:bg-black view-hidden animate-view">
             
             <!-- Left Side: Literary Writing Canvas -->
-            <div class="w-full lg:w-3/5 xl:w-2/3 flex flex-col border-r border-slate-200/90 bg-white h-[52vh] lg:h-full">
+            <div class="w-full lg:w-3/5 xl:w-2/3 flex flex-col border-r border-slate-200/90 dark:border-zinc-900 bg-white dark:bg-black h-[52vh] lg:h-full">
                 <!-- Writer Sub-header -->
-                <div class="px-6 py-3.5 border-b border-slate-200/80 bg-white flex justify-between items-center gap-4 shrink-0">
+                <div class="px-6 py-3.5 border-b border-slate-200/80 dark:border-zinc-900 bg-white dark:bg-black flex justify-between items-center gap-4 shrink-0">
                     <div class="min-w-0">
                         <div class="flex items-center gap-2">
-                            <span id="writer-book-title" class="text-xs font-semibold text-indigo-600 uppercase tracking-wider truncate">Book Title</span>
-                            <span class="text-slate-300">/</span>
-                            <span id="chapter-word-count" class="text-xs text-slate-400 font-medium">0 words</span>
+                            <span id="writer-book-title" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider truncate">Book Title</span>
+                            <span class="text-slate-300 dark:text-zinc-700">/</span>
+                            <span id="chapter-word-count" class="text-xs text-slate-400 dark:text-zinc-400 font-medium">0 words</span>
                         </div>
-                        <h3 id="writer-chapter-title" class="text-lg md:text-xl font-bold text-slate-900 truncate">Chapter Title</h3>
+                        <h3 id="writer-chapter-title" class="text-lg md:text-xl font-bold text-slate-900 dark:text-white truncate">Chapter Title</h3>
                     </div>
 
                     <div class="flex items-center gap-2 shrink-0">
-                        <button id="copyChapterBtn" class="px-3 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5" title="Copy Chapter Text">
+                        <button id="copyChapterBtn" class="px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-900 border border-transparent dark:border-zinc-800 transition flex items-center gap-1.5" title="Copy Chapter Text">
                             <i class="far fa-copy"></i> <span class="hidden sm:inline">Copy</span>
                         </button>
-                        <button id="toggleEditBtn" class="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition bg-slate-100 text-slate-700 hover:bg-slate-200">
+                        <button id="toggleEditBtn" class="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-800">
                             <i class="fas fa-pen-to-square"></i> <span id="toggleEditText">Manual Edit</span>
                         </button>
                     </div>
@@ -294,26 +342,28 @@
 
                 <!-- Prose Viewport -->
                 <div class="flex-grow relative overflow-hidden paper-canvas flex flex-col">
-                    <textarea id="chapter-editor" class="absolute inset-0 w-full h-full p-6 md:p-12 resize-none font-serif text-base md:text-lg text-slate-800 leading-loose focus:outline-none bg-amber-50/20 view-hidden z-10" placeholder="Begin writing or editing your chapter prose manually here..."></textarea>
-                    <div id="chapter-viewer" class="absolute inset-0 w-full h-full p-6 md:p-12 overflow-y-auto font-serif text-base md:text-lg text-slate-800 leading-loose whitespace-pre-wrap max-w-4xl mx-auto"></div>
+                    <!-- Top Shimmer Progress Bar when AI is generating -->
+                    <div id="editor-ai-bar" class="h-1 w-full bg-indigo-500/10 overflow-hidden relative shimmer-bar view-hidden shrink-0"></div>
+                    <textarea id="chapter-editor" class="absolute inset-0 w-full h-full p-6 md:p-12 resize-none font-serif text-base md:text-lg text-slate-800 dark:text-zinc-100 leading-loose focus:outline-none bg-amber-50/20 dark:bg-black view-hidden z-10" placeholder="Begin writing or editing your chapter prose manually here..."></textarea>
+                    <div id="chapter-viewer" class="absolute inset-0 w-full h-full p-6 md:p-12 overflow-y-auto font-serif text-base md:text-lg text-slate-800 dark:text-zinc-100 leading-loose whitespace-pre-wrap max-w-4xl mx-auto"></div>
                 </div>
             </div>
 
             <!-- Right Side: AI Co-writer Studio Chat -->
-            <div class="w-full lg:w-2/5 xl:w-1/3 flex flex-col bg-slate-50 h-[48vh] lg:h-full border-t lg:border-t-0 border-slate-200">
+            <div class="w-full lg:w-2/5 xl:w-1/3 flex flex-col bg-slate-50 dark:bg-black h-[48vh] lg:h-full border-t lg:border-t-0 border-slate-200 dark:border-zinc-900">
                 <!-- Chat Header -->
-                <div class="px-5 py-3.5 border-b border-slate-200/80 bg-white flex items-center justify-between shrink-0">
+                <div class="px-5 py-3.5 border-b border-slate-200/80 dark:border-zinc-900 bg-white dark:bg-black flex items-center justify-between shrink-0">
                     <div class="flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                        <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 border dark:border-indigo-900/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
                             <i class="fas fa-wand-magic-sparkles text-sm"></i>
                         </div>
                         <div>
-                            <h3 class="font-bold text-slate-800 text-sm">AI Co-Author</h3>
-                            <p class="text-[11px] text-slate-400">Context-aware narrative engine</p>
+                            <h3 class="font-bold text-slate-800 dark:text-white text-sm">AI Co-Author</h3>
+                            <p class="text-[11px] text-slate-400 dark:text-zinc-400">Context-aware narrative engine</p>
                         </div>
                     </div>
-                    <span id="ai-status" class="text-xs font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 hidden flex items-center gap-1.5">
-                        <i class="fas fa-circle-notch fa-spin text-indigo-500"></i> Writing prose...
+                    <span id="ai-status" class="text-xs font-medium text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/80 px-3 py-1 rounded-full border border-indigo-100 dark:border-indigo-800/70 hidden flex items-center gap-1.5">
+                        <i class="fas fa-feather-pointed animate-quill text-indigo-500 dark:text-indigo-400"></i> Writing prose...
                     </span>
                 </div>
                 
@@ -323,74 +373,16 @@
                 </div>
 
                 <!-- Prompt Input Area -->
-                <div class="p-4 border-t border-slate-200/80 bg-white shrink-0">
-                    <div class="relative flex items-end gap-2 bg-slate-50 border border-slate-200/90 rounded-2xl p-2 focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-500 focus-within:bg-white transition">
-                        <textarea id="chat-input" placeholder="Direct the next scene (e.g., 'Have Elena discover the hidden letter inside the clockwork desk...')" class="flex-grow resize-none bg-transparent border-0 p-2 focus:outline-none text-sm text-slate-800 h-[64px] md:h-[76px] leading-relaxed"></textarea>
-                        <button id="sendChatBtn" disabled class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white rounded-xl w-11 h-11 flex items-center justify-center transition shadow-sm shrink-0">
+                <div class="p-4 border-t border-slate-200/80 dark:border-zinc-900 bg-white dark:bg-black shrink-0">
+                    <div class="relative flex items-end gap-2 bg-slate-50 dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 rounded-2xl p-2 focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-500 focus-within:bg-white dark:focus-within:bg-black transition">
+                        <textarea id="chat-input" placeholder="Direct the next scene (e.g., 'Have Elena discover the hidden letter inside the clockwork desk...')" class="flex-grow resize-none bg-transparent border-0 p-2 focus:outline-none text-sm text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 h-[64px] md:h-[76px] leading-relaxed"></textarea>
+                        <button id="sendChatBtn" disabled class="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-200 dark:disabled:bg-zinc-900 disabled:text-slate-400 dark:disabled:text-zinc-600 disabled:cursor-not-allowed text-white rounded-xl w-11 h-11 flex items-center justify-center transition shadow-sm shrink-0">
                             <i class="fas fa-paper-plane text-sm"></i>
                         </button>
                     </div>
-                    <div class="flex justify-between items-center mt-2 px-1 text-[11px] text-slate-400">
-                        <span><kbd class="px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200 font-sans">Enter</kbd> to send, <kbd class="px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200 font-sans">Shift+Enter</kbd> for new line</span>
-                        <span id="active-model-badge" class="font-mono text-[10px] text-slate-500 truncate max-w-[160px]">openai/gpt-4o-mini</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- VIEW 4: SETTINGS -->
-        <div id="view-settings" class="absolute inset-0 overflow-y-auto p-6 md:p-10 view-hidden animate-view">
-            <div class="max-w-2xl mx-auto w-full">
-                <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200/80">
-                    <div class="flex items-center gap-3.5 mb-6 pb-5 border-b border-slate-100">
-                        <div class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
-                            <i class="fas fa-sliders"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-2xl font-bold text-slate-900">Studio Configuration</h2>
-                            <p class="text-xs text-slate-500">Configure your OpenRouter API connection & model preferences</p>
-                        </div>
-                    </div>
-                    
-                    <div class="space-y-6">
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-800 mb-2">OpenRouter API Key</label>
-                            <div class="relative">
-                                <input type="password" id="api-key-input" placeholder="sk-or-v1-..." class="w-full p-3.5 pr-11 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none text-sm font-mono transition">
-                                <button type="button" id="toggleApiKeyVis" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                                    <i class="far fa-eye"></i>
-                                </button>
-                            </div>
-                            <p class="text-xs text-slate-500 mt-2 flex items-center gap-1.5">
-                                <i class="fas fa-shield-halved text-emerald-500"></i> Synced privately to your personal cloud profile & browser.
-                            </p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-800 mb-2">Model Identifier (Slug)</label>
-                            <input type="text" id="model-slug-input" placeholder="e.g., openai/gpt-4o-mini" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none font-mono text-sm transition">
-                            <p class="text-xs text-slate-500 mt-1.5 mb-3">Choose any model slug supported by OpenRouter:</p>
-                            <div class="flex flex-wrap gap-2 text-xs">
-                                <button type="button" class="model-preset bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 border border-slate-200 px-3 py-1.5 rounded-lg font-mono cursor-pointer transition">openai/gpt-4o-mini</button>
-                                <button type="button" class="model-preset bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 border border-slate-200 px-3 py-1.5 rounded-lg font-mono cursor-pointer transition">anthropic/claude-3.5-sonnet</button>
-                                <button type="button" class="model-preset bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 border border-slate-200 px-3 py-1.5 rounded-lg font-mono cursor-pointer transition">meta-llama/llama-3.1-8b-instruct</button>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-indigo-50/70 p-4 rounded-2xl border border-indigo-100">
-                            <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-900 mb-1 flex items-center gap-1.5">
-                                <i class="fas fa-brain text-indigo-500"></i> Active AI Engine & System Prompt
-                            </h4>
-                            <p class="text-xs text-indigo-800/80 leading-relaxed">
-                                The AI engine is locked to your original novelist configuration: instructing it to write natural, engaging human-like prose, avoid AI conversational clichés, and seamlessly weave your book synopsis and prior chapters into each new scene.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="mt-8 pt-6 border-t border-slate-100 flex justify-end gap-3">
-                        <button id="saveSettingsBtn" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-6 py-2.5 rounded-xl font-medium transition shadow-md shadow-indigo-600/20 flex items-center gap-2">
-                            <i class="fas fa-check"></i> Save Configuration
-                        </button>
+                    <div class="flex justify-between items-center mt-2 px-1 text-[11px] text-slate-400 dark:text-zinc-500">
+                        <span><kbd class="px-1.5 py-0.5 bg-slate-100 dark:bg-zinc-900 rounded border border-slate-200 dark:border-zinc-800 font-sans text-slate-500 dark:text-zinc-400">Enter</kbd> to send, <kbd class="px-1.5 py-0.5 bg-slate-100 dark:bg-zinc-900 rounded border border-slate-200 dark:border-zinc-800 font-sans text-slate-500 dark:text-zinc-400">Shift+Enter</kbd> for new line</span>
+                        <span id="active-model-badge" class="font-mono text-[10px] text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/70 px-2 py-0.5 rounded border border-indigo-100 dark:border-indigo-900/60 truncate max-w-[200px]">Loading AI Config...</span>
                     </div>
                 </div>
             </div>
@@ -399,23 +391,23 @@
     </main>
 
     <!-- ================= CUSTOM SITE-HANDLED MODAL DIALOG (NO BROWSER PROMPTS/CONFIRMS) ================= -->
-    <div id="custom-modal-backdrop" class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 view-hidden">
-        <div id="custom-modal-box" class="bg-white rounded-3xl max-w-md w-full p-6 md:p-7 shadow-2xl border border-slate-100 animate-modal">
+    <div id="custom-modal-backdrop" class="fixed inset-0 z-50 bg-slate-950/70 dark:bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 view-hidden">
+        <div id="custom-modal-box" class="bg-white dark:bg-zinc-950 rounded-3xl max-w-md w-full p-6 md:p-7 shadow-2xl border border-slate-100 dark:border-zinc-800 animate-modal">
             <div class="flex items-start gap-4">
-                <div id="modal-icon-container" class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 text-lg">
+                <div id="modal-icon-container" class="w-11 h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 text-lg">
                     <i id="modal-icon" class="fas fa-feather"></i>
                 </div>
                 <div class="flex-grow">
-                    <h3 id="modal-title" class="text-lg font-bold text-slate-900 mb-1">Modal Title</h3>
-                    <p id="modal-description" class="text-sm text-slate-500 leading-relaxed mb-4">Description text goes here.</p>
+                    <h3 id="modal-title" class="text-lg font-bold text-slate-900 dark:text-white mb-1">Modal Title</h3>
+                    <p id="modal-description" class="text-sm text-slate-500 dark:text-zinc-400 leading-relaxed mb-4">Description text goes here.</p>
                     <div id="modal-input-wrapper" class="mb-4 view-hidden">
-                        <input id="modal-input" type="text" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none text-sm text-slate-800 transition" placeholder="Enter value...">
+                        <input id="modal-input" type="text" class="w-full p-3 bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-xl focus:bg-white dark:focus:bg-black focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none text-sm text-slate-800 dark:text-white transition" placeholder="Enter value...">
                     </div>
                 </div>
             </div>
-            <div class="flex justify-end gap-2.5 mt-4 pt-3 border-t border-slate-100">
-                <button id="modal-cancel-btn" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition">Cancel</button>
-                <button id="modal-confirm-btn" class="px-5 py-2 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm">Confirm</button>
+            <div class="flex justify-end gap-2.5 mt-4 pt-3 border-t border-slate-100 dark:border-zinc-900">
+                <button id="modal-cancel-btn" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-900 transition">Cancel</button>
+                <button id="modal-confirm-btn" class="px-5 py-2 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition shadow-sm">Confirm</button>
             </div>
         </div>
     </div>
@@ -428,7 +420,7 @@
         // --- Firebase SDK Imports (v11.6.1) ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getStorage, ref as storageRef, uploadString, getBytes } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- User Provided Firebase Configuration ---
         const firebaseConfig = {
@@ -440,26 +432,26 @@
             appId: "1:890136810049:web:a5093c92194f4172f0ecc0"
         };
 
-        // Initialize Firebase Auth & Storage
+        // Initialize Firebase Auth & Cloud Firestore
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const storage = getStorage(app);
+        const db = getFirestore(app);
         const googleProvider = new GoogleAuthProvider();
 
         // --- Constants & Keys ---
         const STORAGE_KEY_BOOKS = 'ai_book_writer_books';
-        const STORAGE_KEY_SETTINGS = 'ai_book_writer_settings';
+        const STORAGE_KEY_THEME = 'ai_book_writer_amoled_theme';
 
-        // --- Default Settings ---
+        // --- AI Settings (Pulled from Firestore: artificial-intelligence / authentication) ---
         let settings = {
             apiKey: '',
-            modelSlug: 'openai/gpt-4o-mini'
+            modelSlug: ''
         };
 
         // --- State ---
         let currentUser = null;
         let books = [];
-        let currentView = 'bookshelf'; // bookshelf, book, chapter, settings
+        let currentView = 'bookshelf'; // bookshelf, book, chapter
         let activeBookId = null;
         let activeChapterId = null;
         let isEditing = false;
@@ -476,12 +468,15 @@
         const views = {
             bookshelf: document.getElementById('view-bookshelf'),
             book: document.getElementById('view-book'),
-            chapter: document.getElementById('view-chapter'),
-            settings: document.getElementById('view-settings')
+            chapter: document.getElementById('view-chapter')
         };
         const backBtn = document.getElementById('backBtn');
         const logoBtn = document.getElementById('logoBtn');
-        const settingsBtn = document.getElementById('settingsBtn');
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const themeIcon = document.getElementById('theme-icon');
+        const themeLabel = document.getElementById('theme-label');
+        const studioLoader = document.getElementById('studio-loader');
+        const editorAiBar = document.getElementById('editor-ai-bar');
 
         // Auth Elements
         const authOverlay = document.getElementById('auth-overlay');
@@ -524,13 +519,6 @@
         const aiStatus = document.getElementById('ai-status');
         const activeModelBadge = document.getElementById('active-model-badge');
 
-        // Settings Elements
-        const apiKeyInput = document.getElementById('api-key-input');
-        const toggleApiKeyVis = document.getElementById('toggleApiKeyVis');
-        const modelSlugInput = document.getElementById('model-slug-input');
-        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-        const modelPresets = document.querySelectorAll('.model-preset');
-
         // Custom Modal Elements
         const modalBackdrop = document.getElementById('custom-modal-backdrop');
         const modalTitle = document.getElementById('modal-title');
@@ -541,40 +529,66 @@
         const modalConfirmBtn = document.getElementById('modal-confirm-btn');
         const modalIcon = document.getElementById('modal-icon');
         const modalIconContainer = document.getElementById('modal-icon-container');
+        const toastContainer = document.getElementById('toast-container');
 
         // =========================================================================
-        // CUSTOM SITE UI HELPERS (REPLACES BROWSER ALERT / PROMPT / CONFIRM)
+        // TRUE AMOLED NIGHT MODE THEME ENGINE
+        // =========================================================================
+        function initTheme() {
+            const savedTheme = localStorage.getItem(STORAGE_KEY_THEME);
+            // Default to True Black AMOLED mode if user prefers dark or hasn't chosen yet
+            const useDark = savedTheme ? savedTheme === 'dark' : true;
+            applyTheme(useDark);
+        }
+
+        function applyTheme(isDark) {
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+                themeIcon.className = 'fas fa-sun text-amber-400';
+                themeLabel.textContent = 'Light Mode';
+            } else {
+                document.documentElement.classList.remove('dark');
+                themeIcon.className = 'fas fa-moon text-indigo-400';
+                themeLabel.textContent = 'AMOLED Night';
+            }
+            localStorage.setItem(STORAGE_KEY_THEME, isDark ? 'dark' : 'light');
+        }
+
+        function toggleTheme() {
+            const isCurrentlyDark = document.documentElement.classList.contains('dark');
+            applyTheme(!isCurrentlyDark);
+            showToast(!isCurrentlyDark ? 'True Black AMOLED Night Mode enabled' : 'Light Studio Mode enabled', 'info');
+        }
+
+        // =========================================================================
+        // SITE-HANDLED MODALS & TOAST NOTIFICATIONS (NO BROWSER ALERTS/PROMPTS)
         // =========================================================================
         function showToast(message, type = 'info') {
-            const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            
-            const styles = {
-                info: 'bg-slate-900 text-white border-slate-800',
-                success: 'bg-emerald-950 text-emerald-100 border-emerald-800/80',
-                error: 'bg-red-950 text-red-100 border-red-800/80'
+            const colorMap = {
+                success: 'bg-slate-900 border-emerald-500/40 text-white',
+                error: 'bg-red-950 border-red-500/40 text-red-100',
+                info: 'bg-slate-900 border-indigo-500/40 text-white'
             };
-            const icons = {
-                info: 'fa-circle-info text-indigo-400',
+            const iconMap = {
                 success: 'fa-circle-check text-emerald-400',
-                error: 'fa-triangle-exclamation text-red-400'
+                error: 'fa-circle-exclamation text-red-400',
+                info: 'fa-circle-info text-indigo-400'
             };
 
-            toast.className = `pointer-events-auto flex items-center gap-3 p-4 rounded-2xl shadow-xl border text-xs font-medium animate-modal transition duration-300 ${styles[type] || styles.info}`;
+            toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-xl text-xs font-medium animate-modal ${colorMap[type] || colorMap.info}`;
             toast.innerHTML = `
-                <i class="fas ${icons[type] || icons.info} text-base shrink-0"></i>
+                <i class="fas ${iconMap[type] || iconMap.info} text-sm shrink-0"></i>
                 <span class="flex-grow leading-relaxed">${escapeHtml(message)}</span>
-                <button class="text-slate-400 hover:text-white p-1"><i class="fas fa-xmark"></i></button>
             `;
-
-            toast.querySelector('button').addEventListener('click', () => toast.remove());
-            container.appendChild(toast);
+            toastContainer.appendChild(toast);
 
             setTimeout(() => {
                 toast.style.opacity = '0';
                 toast.style.transform = 'translateY(8px)';
-                setTimeout(() => toast.remove(), 250);
-            }, 4200);
+                toast.style.transition = 'all 0.2s ease';
+                setTimeout(() => toast.remove(), 200);
+            }, 3500);
         }
 
         function openSiteModal({ title, description, mode = 'prompt', placeholder = '', confirmText = 'Confirm', danger = false }) {
@@ -586,11 +600,11 @@
                 if (danger) {
                     modalConfirmBtn.className = "px-5 py-2 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-700 text-white transition shadow-sm";
                     modalIconContainer.className = "w-11 h-11 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center shrink-0 text-lg";
-                    modalIcon.className = "fas fa-trash-can";
+                    modalIcon.className = "fas fa-triangle-exclamation";
                 } else {
                     modalConfirmBtn.className = "px-5 py-2 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm";
                     modalIconContainer.className = "w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 text-lg";
-                    modalIcon.className = "fas fa-feather-pointed";
+                    modalIcon.className = "fas fa-feather";
                 }
 
                 if (mode === 'prompt') {
@@ -602,43 +616,41 @@
                 }
 
                 modalBackdrop.classList.remove('view-hidden');
-                if (mode === 'prompt') setTimeout(() => modalInput.focus(), 60);
+                if (mode === 'prompt') {
+                    setTimeout(() => modalInput.focus(), 50);
+                }
 
                 const cleanup = () => {
                     modalBackdrop.classList.add('view-hidden');
-                    modalConfirmBtn.removeEventListener('click', onConfirm);
-                    modalCancelBtn.removeEventListener('click', onCancel);
-                    modalInput.removeEventListener('keydown', onKey);
+                    modalConfirmBtn.onclick = null;
+                    modalCancelBtn.onclick = null;
+                    modalInput.onkeydown = null;
                 };
 
-                const onConfirm = () => {
+                modalConfirmBtn.onclick = () => {
                     const val = mode === 'prompt' ? modalInput.value : true;
                     cleanup();
                     resolve(val);
                 };
 
-                const onCancel = () => {
+                modalCancelBtn.onclick = () => {
                     cleanup();
                     resolve(null);
                 };
 
-                const onKey = (e) => {
+                modalInput.onkeydown = (e) => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
-                        onConfirm();
+                        modalConfirmBtn.click();
                     } else if (e.key === 'Escape') {
-                        onCancel();
+                        modalCancelBtn.click();
                     }
                 };
-
-                modalConfirmBtn.addEventListener('click', onConfirm);
-                modalCancelBtn.addEventListener('click', onCancel);
-                modalInput.addEventListener('keydown', onKey);
             });
         }
 
         // =========================================================================
-        // FIREBASE STORAGE & GOOGLE AUTHENTICATION
+        // FIRESTORE DATABASE: AI CREDENTIALS & BOOKS STORAGE
         // =========================================================================
         function setSyncIndicator(state, label) {
             if (state === 'syncing') {
@@ -649,90 +661,110 @@
                 syncText.textContent = label || 'Cloud Synced';
             } else if (state === 'error') {
                 syncDot.className = 'w-2 h-2 rounded-full bg-red-400';
-                syncText.textContent = label || 'Local Backup Active';
+                syncText.textContent = label || 'Sync Error (Check Rules)';
             }
         }
 
-        async function loadDataFromFirebaseStorage() {
-            if (!currentUser) return;
-            setSyncIndicator('syncing', 'Loading library...');
-
-            // Load local fallback settings first
-            const savedSettings = localStorage.getItem(`${STORAGE_KEY_SETTINGS}_${currentUser.uid}`) || localStorage.getItem(STORAGE_KEY_SETTINGS);
-            if (savedSettings) {
-                try {
-                    settings = { ...settings, ...JSON.parse(savedSettings) };
-                } catch (e) { console.error("Error loading settings", e); }
-            }
-
+        // Pulls OpenRouter `api` and `slug` directly from Firestore: artificial-intelligence / authentication
+        async function fetchAIConfigFromFirestore() {
             try {
-                const userBooksRef = storageRef(storage, `users/${currentUser.uid}/books.json`);
-                const bytes = await getBytes(userBooksRef);
-                const decodedText = new TextDecoder().decode(bytes);
-                const parsed = JSON.parse(decodedText);
-
-                if (Array.isArray(parsed)) {
-                    books = parsed;
-                } else if (parsed && Array.isArray(parsed.books)) {
-                    books = parsed.books;
-                    if (parsed.settings) {
-                        settings = { ...settings, ...parsed.settings };
+                const aiDocRef = doc(db, "artificial-intelligence", "authentication");
+                const aiSnap = await getDoc(aiDocRef);
+                if (aiSnap.exists()) {
+                    const data = aiSnap.data();
+                    settings.apiKey = (data.api || '').trim();
+                    settings.modelSlug = (data.slug || '').trim();
+                    if (activeModelBadge) {
+                        activeModelBadge.textContent = settings.modelSlug || 'Model Loaded';
                     }
-                }
-                localStorage.setItem(`${STORAGE_KEY_BOOKS}_${currentUser.uid}`, JSON.stringify(books));
-                setSyncIndicator('saved', 'Cloud Synced');
-            } catch (error) {
-                // If file doesn't exist yet in Firebase Storage or rules need setup, check user local cache or migrate initial books
-                if (error.code === 'storage/object-not-found') {
-                    const localUserBooks = localStorage.getItem(`${STORAGE_KEY_BOOKS}_${currentUser.uid}`) || localStorage.getItem(STORAGE_KEY_BOOKS);
-                    books = localUserBooks ? JSON.parse(localUserBooks) : [];
-                    await uploadBooksToFirebaseStorage();
                 } else {
-                    console.warn("Firebase Storage load notice:", error);
-                    const localUserBooks = localStorage.getItem(`${STORAGE_KEY_BOOKS}_${currentUser.uid}`) || localStorage.getItem(STORAGE_KEY_BOOKS);
-                    books = localUserBooks ? JSON.parse(localUserBooks) : [];
-                    setSyncIndicator('error', 'Saved Locally');
+                    console.error("Firestore document 'artificial-intelligence/authentication' does not exist.");
+                    showToast("AI config document 'artificial-intelligence/authentication' not found in Firestore.", "error");
                 }
+            } catch (error) {
+                console.error("Error fetching AI config from Firestore:", error);
+                showToast(`Firestore AI Auth Error: ${error.message}`, "error");
+            }
+        }
+
+        // Loads user's books from Firestore: users/{uid} (plus fetches AI config)
+        async function loadDataFromFirestore() {
+            if (!currentUser) return;
+            setSyncIndicator('syncing', 'Loading Cloud...');
+            if (studioLoader) studioLoader.classList.remove('view-hidden');
+
+            // 1. Fetch AI credentials (`api` & `slug`) from `artificial-intelligence/authentication`
+            await fetchAIConfigFromFirestore();
+
+            // 2. Fetch User's Books from `users/{uid}` in Cloud Firestore
+            try {
+                const userDocRef = doc(db, "users", currentUser.uid);
+                const userSnap = await getDoc(userDocRef);
+
+                if (userSnap.exists() && Array.isArray(userSnap.data().books)) {
+                    books = userSnap.data().books;
+                    localStorage.setItem(STORAGE_KEY_BOOKS, JSON.stringify(books));
+                    setSyncIndicator('saved', 'Cloud Synced');
+                } else {
+                    // First time in Firestore: migrate any local books and push immediately to Firestore
+                    const savedBooks = localStorage.getItem(STORAGE_KEY_BOOKS);
+                    if (savedBooks) {
+                        try {
+                            books = JSON.parse(savedBooks);
+                        } catch (e) { books = []; }
+                    } else {
+                        books = [];
+                    }
+                    await uploadBooksToFirestore();
+                }
+            } catch (error) {
+                console.error("Error loading books from Firestore:", error);
+                showToast(`Firestore Sync Error: ${error.message}`, "error");
+                const savedBooks = localStorage.getItem(STORAGE_KEY_BOOKS);
+                if (savedBooks) {
+                    try {
+                        books = JSON.parse(savedBooks);
+                    } catch (e) { console.error("Error loading local backup", e); }
+                }
+                setSyncIndicator('error', 'Sync Failed');
+            } finally {
+                if (studioLoader) studioLoader.classList.add('view-hidden');
             }
 
-            activeModelBadge.textContent = settings.modelSlug || 'openai/gpt-4o-mini';
             renderView(currentView);
         }
 
-        async function uploadBooksToFirebaseStorage() {
+        // Saves user's books directly into Firestore `users/{uid}`
+        async function uploadBooksToFirestore() {
             if (!currentUser) return;
-            setSyncIndicator('syncing', 'Syncing to Firebase...');
+            setSyncIndicator('syncing', 'Syncing to Firestore...');
             try {
-                const userBooksRef = storageRef(storage, `users/${currentUser.uid}/books.json`);
-                const payload = JSON.stringify({
+                const userDocRef = doc(db, "users", currentUser.uid);
+                await setDoc(userDocRef, {
                     books: books,
-                    settings: settings,
-                    updatedAt: new Date().toISOString()
-                });
-                await uploadString(userBooksRef, payload, 'raw', { contentType: 'application/json' });
+                    updatedAt: new Date().toISOString(),
+                    email: currentUser.email || ''
+                }, { merge: true });
                 setSyncIndicator('saved', 'Cloud Synced');
             } catch (error) {
-                console.error("Error uploading books to Firebase Storage:", error);
-                setSyncIndicator('error', 'Local Backup Saved');
+                console.error("Error saving books to Firestore:", error);
+                setSyncIndicator('error', 'Cloud Sync Failed');
+                showToast(`Failed to sync novel to Firestore: ${error.message}`, "error");
             }
         }
 
-        function saveData() {
+        function saveData(immediate = false) {
+            localStorage.setItem(STORAGE_KEY_BOOKS, JSON.stringify(books));
             if (!currentUser) return;
-            // Immediate local cache + debounced Firebase Storage upload
-            localStorage.setItem(`${STORAGE_KEY_BOOKS}_${currentUser.uid}`, JSON.stringify(books));
             setSyncIndicator('syncing', 'Syncing...');
             clearTimeout(syncTimeout);
-            syncTimeout = setTimeout(() => {
-                uploadBooksToFirebaseStorage();
-            }, 650);
-        }
-
-        function saveSettingsData() {
-            if (!currentUser) return;
-            localStorage.setItem(`${STORAGE_KEY_SETTINGS}_${currentUser.uid}`, JSON.stringify(settings));
-            activeModelBadge.textContent = settings.modelSlug || 'openai/gpt-4o-mini';
-            uploadBooksToFirebaseStorage();
+            if (immediate) {
+                uploadBooksToFirestore();
+            } else {
+                syncTimeout = setTimeout(() => {
+                    uploadBooksToFirestore();
+                }, 400);
+            }
         }
 
         function generateId() {
@@ -754,9 +786,6 @@
             return book ? book.chapters.find(c => c.id === activeChapterId) : null;
         }
 
-        // =========================================================================
-        // ORIGINAL AI CONTEXT HELPER (UNTOUCHED)
-        // =========================================================================
         function getPreviousChaptersContext(book, currentChapterId) {
             const currentIndex = book.chapters.findIndex(c => c.id === currentChapterId);
             if (currentIndex <= 0) return "";
@@ -774,7 +803,9 @@
             currentView = viewName;
             
             // Hide all views
-            Object.values(views).forEach(v => v.classList.add('view-hidden'));
+            Object.values(views).forEach(v => {
+                if (v) v.classList.add('view-hidden');
+            });
             
             // Show selected view
             if (views[viewName]) {
@@ -784,19 +815,12 @@
             // Update Header buttons
             if (viewName === 'bookshelf') {
                 backBtn.classList.add('view-hidden');
-                settingsBtn.classList.remove('view-hidden');
                 renderBookshelf();
-            } else if (viewName === 'settings') {
-                backBtn.classList.remove('view-hidden');
-                settingsBtn.classList.add('view-hidden');
-                populateSettings();
             } else if (viewName === 'book') {
                 backBtn.classList.remove('view-hidden');
-                settingsBtn.classList.remove('view-hidden');
                 renderBookDetails();
             } else if (viewName === 'chapter') {
                 backBtn.classList.remove('view-hidden');
-                settingsBtn.classList.remove('view-hidden');
                 renderChapterWriter();
             }
         }
@@ -804,7 +828,7 @@
         function handleBack() {
             if (currentView === 'chapter') {
                 renderView('book');
-            } else if (currentView === 'book' || currentView === 'settings') {
+            } else if (currentView === 'book') {
                 renderView('bookshelf');
             }
         }
@@ -824,31 +848,31 @@
 
             books.forEach(book => {
                 const card = document.createElement('div');
-                card.className = "bg-white p-6 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 border border-slate-200/80 transition-all duration-200 flex flex-col group cursor-pointer relative overflow-hidden";
+                card.className = "bg-white dark:bg-black p-6 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 border border-slate-200/80 dark:border-zinc-800 hover:border-indigo-300 dark:hover:border-indigo-500/60 transition-all duration-200 flex flex-col group cursor-pointer";
                 
-                const synopsisText = book.synopsis ? book.synopsis : "No synopsis written yet. Click to open and outline your novel.";
+                const synopsisText = book.synopsis ? book.synopsis : "No synopsis written yet. Click to add plot context.";
                 const totalWords = book.chapters.reduce((sum, ch) => sum + countWords(ch.content), 0);
-                
+
                 card.innerHTML = `
-                    <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4 group-hover:bg-indigo-600 group-hover:text-white transition">
-                        <i class="fas fa-book-bookmark"></i>
+                    <div class="flex items-start justify-between gap-3 mb-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-zinc-950 border border-transparent dark:border-zinc-800 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition">
+                            <i class="fas fa-book-bookmark"></i>
+                        </div>
+                        <button class="delete-book text-slate-300 dark:text-zinc-600 hover:text-red-500 dark:hover:text-red-400 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 transition opacity-0 group-hover:opacity-100" data-id="${book.id}" title="Delete Book">
+                            <i class="fas fa-trash-can text-sm"></i>
+                        </button>
                     </div>
-                    <h3 class="text-xl font-bold text-slate-900 mb-2 truncate" title="${escapeHtml(book.title)}">${escapeHtml(book.title)}</h3>
-                    <p class="text-slate-500 text-sm mb-6 line-clamp-3 flex-grow leading-relaxed">${escapeHtml(synopsisText)}</p>
-                    <div class="flex justify-between items-center text-xs text-slate-400 pt-4 border-t border-slate-100">
-                        <div class="flex items-center gap-3 font-medium text-slate-500">
-                            <span><i class="far fa-file-lines mr-1 text-indigo-400"></i>${book.chapters.length} Chapters</span>
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition" title="${escapeHtml(book.title)}">${escapeHtml(book.title)}</h3>
+                    <p class="text-slate-500 dark:text-zinc-400 text-sm mb-6 line-clamp-3 flex-grow leading-relaxed">${escapeHtml(synopsisText)}</p>
+                    <div class="flex justify-between items-center text-xs font-medium text-slate-400 dark:text-zinc-500 pt-4 border-t border-slate-100 dark:border-zinc-900">
+                        <div class="flex items-center gap-3">
+                            <span><i class="far fa-file-lines mr-1"></i> ${book.chapters.length} Chapters</span>
                             <span>•</span>
                             <span>${totalWords.toLocaleString()} words</span>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <button class="delete-book text-slate-400 hover:text-red-600 hover:bg-red-50 w-8 h-8 rounded-lg flex items-center justify-center transition" data-id="${book.id}" title="Delete Book">
-                                <i class="fas fa-trash-can"></i>
-                            </button>
-                            <button class="open-book text-indigo-600 font-semibold hover:underline flex items-center gap-1 pl-1" data-id="${book.id}">
-                                Open <i class="fas fa-chevron-right text-[10px]"></i>
-                            </button>
-                        </div>
+                        <span class="open-book text-indigo-600 dark:text-indigo-400 font-semibold flex items-center gap-1 group-hover:translate-x-0.5 transition" data-id="${book.id}">
+                            Open <i class="fas fa-arrow-right text-[10px]"></i>
+                        </span>
                     </div>
                 `;
 
@@ -862,7 +886,6 @@
                 bookshelfGrid.appendChild(card);
             });
 
-            // Attach delete listeners using custom modal
             document.querySelectorAll('.delete-book').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     e.stopPropagation();
@@ -870,16 +893,16 @@
                     const targetBook = books.find(b => b.id === id);
                     const confirmed = await openSiteModal({
                         title: 'Delete Novel?',
-                        description: `Are you sure you want to permanently delete "${targetBook ? targetBook.title : 'this book'}" and all its chapters? This cannot be undone.`,
+                        description: `Are you sure you want to permanently delete "${targetBook ? targetBook.title : 'this book'}"? This action cannot be undone.`,
                         mode: 'confirm',
-                        confirmText: 'Delete Novel',
+                        confirmText: 'Delete Book',
                         danger: true
                     });
                     if (confirmed) {
                         books = books.filter(b => b.id !== id);
-                        saveData();
+                        saveData(true);
                         renderBookshelf();
-                        showToast('Book deleted from your bookshelf.', 'info');
+                        showToast('Book removed from library.', 'info');
                     }
                 });
             });
@@ -887,16 +910,16 @@
 
         async function createNewBook() {
             const title = await openSiteModal({
-                title: 'Start a New Book',
-                description: 'Give your new manuscript a working title. You can start adding chapters right away.',
+                title: 'Create New Book',
+                description: 'Give your new novel or manuscript a working title:',
                 mode: 'prompt',
-                placeholder: 'e.g., The Clockwork Horizon',
+                placeholder: 'e.g., The Clockwork Alchemist',
                 confirmText: 'Create Book'
             });
             if (title && title.trim()) {
                 const newBook = { id: generateId(), title: title.trim(), synopsis: '', chapters: [] };
                 books.push(newBook);
-                saveData();
+                saveData(true); // Immediately sync new book to Firestore
                 activeBookId = newBook.id;
                 renderView('book');
                 showToast(`Created "${newBook.title}"`, 'success');
@@ -911,37 +934,31 @@
             currentBookTitle.textContent = book.title;
             bookSynopsisInput.value = book.synopsis;
 
-            const totalWords = book.chapters.reduce((acc, c) => acc + countWords(c.content), 0);
-            bookWordCount.textContent = `${totalWords.toLocaleString()} words`;
-
             // Render Chapters List
             chaptersList.innerHTML = '';
             if (book.chapters.length === 0) {
                 chaptersList.innerHTML = `
-                    <div class="text-center py-8 px-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/50">
-                        <p class="text-xs text-slate-400">No chapters created yet. Click "Add Chapter" above to begin.</p>
+                    <div class="text-center py-8 px-4 rounded-xl border border-dashed border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/50">
+                        <p class="text-xs text-slate-400 dark:text-zinc-500">No chapters added yet. Click "+ Add Chapter" above to begin.</p>
                     </div>
                 `;
             } else {
                 book.chapters.forEach((chapter, index) => {
                     const words = countWords(chapter.content);
                     const item = document.createElement('div');
-                    item.className = "flex items-center justify-between group p-3 bg-slate-50/70 hover:bg-indigo-50/60 rounded-xl border border-slate-200/60 hover:border-indigo-200 transition cursor-pointer";
+                    item.className = "flex items-center justify-between group p-3 bg-slate-50/70 dark:bg-zinc-950 hover:bg-indigo-50/60 dark:hover:bg-indigo-950/30 rounded-xl border border-slate-200/60 dark:border-zinc-800 hover:border-indigo-200 dark:hover:border-indigo-500/50 transition cursor-pointer";
                     item.dataset.id = chapter.id;
                     item.innerHTML = `
                         <div class="flex items-center gap-3 overflow-hidden">
-                            <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold shrink-0">${index + 1}</div>
+                            <div class="w-7 h-7 rounded-lg bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold shrink-0 shadow-sm">${index + 1}</div>
                             <div class="truncate">
-                                <span class="text-sm font-semibold text-slate-800 block truncate" title="${escapeHtml(chapter.title)}">${escapeHtml(chapter.title)}</span>
-                                <span class="text-[11px] text-slate-400">${words.toLocaleString()} words</span>
+                                <p class="text-sm font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 truncate transition" title="${escapeHtml(chapter.title)}">${escapeHtml(chapter.title)}</p>
+                                <span class="text-[11px] text-slate-400 dark:text-zinc-500">${words.toLocaleString()} words</span>
                             </div>
                         </div>
-                        <div class="flex items-center gap-1">
-                            <button class="delete-chapter text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-1.5 rounded-lg hover:bg-red-50" data-id="${chapter.id}" title="Delete Chapter">
-                                <i class="fas fa-trash-alt text-xs"></i>
-                            </button>
-                            <i class="fas fa-chevron-right text-xs text-slate-300 group-hover:text-indigo-500 pl-1"></i>
-                        </div>
+                        <button class="delete-chapter text-slate-300 dark:text-zinc-600 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition p-1.5 rounded-lg hover:bg-white dark:hover:bg-zinc-900" data-id="${chapter.id}" title="Delete Chapter">
+                            <i class="fas fa-trash-alt text-xs"></i>
+                        </button>
                     `;
                     item.addEventListener('click', (e) => {
                         if (!e.target.closest('.delete-chapter')) {
@@ -960,47 +977,48 @@
                     const chapterId = e.currentTarget.dataset.id;
                     const confirmed = await openSiteModal({
                         title: 'Delete Chapter?',
-                        description: 'Are you sure you want to delete this chapter and its prose? This cannot be undone.',
+                        description: 'Are you sure you want to delete this chapter and its prose?',
                         mode: 'confirm',
                         confirmText: 'Delete Chapter',
                         danger: true
                     });
                     if (confirmed) {
                         book.chapters = book.chapters.filter(c => c.id !== chapterId);
-                        saveData();
+                        saveData(true);
                         renderBookDetails();
-                        showToast('Chapter removed.', 'info');
+                        showToast('Chapter deleted.', 'info');
                     }
                 });
             });
+
+            // Total book word count
+            const totalWords = book.chapters.reduce((acc, c) => acc + countWords(c.content), 0);
+            bookWordCount.textContent = `${totalWords.toLocaleString()} words`;
 
             // Render Manuscript Preview
             manuscriptPreview.innerHTML = '';
             if (book.chapters.length === 0) {
                 manuscriptPreview.innerHTML = `
-                    <div class="text-center py-24 text-slate-400">
+                    <div class="text-center py-24 text-slate-400 dark:text-zinc-500">
                         <i class="fas fa-feather text-3xl mb-3 opacity-40 block"></i>
-                        <p class="italic font-serif text-lg">Your manuscript preview will appear here as you write chapters...</p>
+                        <p class="italic font-serif text-base">Your manuscript preview will appear here as you write chapters.</p>
                     </div>
                 `;
             } else {
-                const wrapper = document.createElement('div');
-                wrapper.className = "max-w-2xl mx-auto";
                 book.chapters.forEach(chapter => {
                     const section = document.createElement('div');
-                    section.className = "mb-14 pb-10 border-b border-slate-200/60 last:border-b-0";
+                    section.className = "mb-14 pb-10 border-b border-slate-200/60 dark:border-zinc-900 last:border-b-0 max-w-3xl mx-auto";
                     
                     const contentHtml = chapter.content 
-                        ? `<div class="whitespace-pre-wrap text-slate-800 leading-loose font-serif text-lg">${escapeHtml(chapter.content)}</div>`
-                        : `<p class="text-slate-400 italic font-sans text-sm">This chapter is currently blank.</p>`;
+                        ? `<div class="whitespace-pre-wrap text-slate-800 dark:text-zinc-100 leading-loose font-serif text-lg">${escapeHtml(chapter.content)}</div>`
+                        : `<p class="text-slate-400 dark:text-zinc-500 italic font-sans text-sm">This chapter is currently empty.</p>`;
                         
                     section.innerHTML = `
-                        <h2 class="text-2xl font-bold mb-6 font-sans text-slate-900 tracking-tight">${escapeHtml(chapter.title)}</h2>
+                        <h2 class="text-2xl font-bold mb-6 font-serif text-slate-900 dark:text-white tracking-tight">${escapeHtml(chapter.title)}</h2>
                         ${contentHtml}
                     `;
-                    wrapper.appendChild(section);
+                    manuscriptPreview.appendChild(section);
                 });
-                manuscriptPreview.appendChild(wrapper);
             }
         }
 
@@ -1018,7 +1036,7 @@
 
             const nextNum = book.chapters.length + 1;
             const title = await openSiteModal({
-                title: 'New Chapter',
+                title: 'Add New Chapter',
                 description: 'Enter a title for this chapter:',
                 mode: 'prompt',
                 placeholder: `Chapter ${nextNum}: The Beginning`,
@@ -1032,7 +1050,7 @@
                     messages: [{ role: 'system', content: BASE_SYSTEM_PROMPT }]
                 };
                 book.chapters.push(newChapter);
-                saveData();
+                saveData(true); // Immediately sync new chapter to Firestore
                 renderBookDetails();
                 showToast(`Added "${newChapter.title}"`, 'success');
             }
@@ -1090,16 +1108,12 @@
                 chapterViewer.innerHTML = escapeHtml(content);
             } else {
                 chapterViewer.innerHTML = `
-                    <div class="text-center py-20 text-slate-400 font-sans">
-                        <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
-                            <i class="fas fa-feather-pointed"></i>
-                        </div>
-                        <p class="text-sm font-medium text-slate-500 mb-1">The page is currently blank</p>
-                        <p class="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">Use the AI Co-Author prompt panel on the right to direct the opening scene, or switch to Manual Edit.</p>
+                    <div class="text-slate-400 italic font-sans text-sm mt-16 text-center max-w-sm mx-auto">
+                        <i class="fas fa-pen-nib text-2xl mb-3 opacity-40 block"></i>
+                        The page is currently blank. Use the AI Co-Author panel on the right to direct the opening scene, or click "Manual Edit" above to type directly.
                     </div>
                 `;
             }
-            // scroll viewer to bottom to show newest text
             chapterViewer.scrollTop = chapterViewer.scrollHeight;
         }
         
@@ -1131,7 +1145,7 @@
                 chapterEditor.value = chapter.content;
                 chapterEditor.focus();
             } else {
-                toggleEditBtn.className = "px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition bg-slate-100 text-slate-700 hover:bg-slate-200";
+                toggleEditBtn.className = "px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-800";
                 toggleEditBtn.innerHTML = '<i class="fas fa-pen-to-square"></i> <span>Manual Edit</span>';
                 
                 chapterEditor.classList.add('view-hidden');
@@ -1159,11 +1173,12 @@
             
             if (visibleMessages.length === 0) {
                 chatHistory.innerHTML = `
-                    <div class="p-5 bg-indigo-50/70 rounded-2xl border border-indigo-100 text-indigo-900 text-xs leading-relaxed">
-                        <div class="font-bold mb-1 flex items-center gap-1.5 text-indigo-700">
-                            <i class="fas fa-wand-magic-sparkles"></i> Ready to Co-Write
+                    <div class="text-center p-6 bg-white dark:bg-zinc-950 rounded-2xl border border-slate-200/80 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 text-xs leading-relaxed shadow-sm">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-sparkles"></i>
                         </div>
-                        Describe what should happen next in this chapter. Your AI Co-Author automatically reads your Book Synopsis and all previous chapters for continuity.
+                        <p class="font-semibold text-slate-800 dark:text-white mb-1">Ready to Co-Write</p>
+                        Describe what should happen next in this chapter. The AI automatically reads your book synopsis and all previous chapters for continuity.
                     </div>
                 `;
                 return;
@@ -1175,15 +1190,15 @@
                 
                 const bubbleStyle = msg.role === 'user' 
                     ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-xs shadow-sm' 
-                    : 'bg-white border border-slate-200/90 text-slate-800 rounded-2xl rounded-tl-xs shadow-sm';
+                    : 'bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 text-slate-800 dark:text-zinc-100 rounded-2xl rounded-tl-xs shadow-sm';
                     
-                const roleText = msg.role === 'user' ? 'Your Direction' : 'Generated Prose Added to Chapter';
+                const roleText = msg.role === 'user' ? 'Your Direction' : 'Generated Prose Added';
 
                 msgWrapper.innerHTML = `
                     <div class="max-w-[90%] p-3.5 ${bubbleStyle}">
                         <p class="text-xs md:text-sm whitespace-pre-wrap leading-relaxed ${msg.role === 'assistant' ? 'font-serif' : ''}">${escapeHtml(msg.content)}</p>
                     </div>
-                    <span class="text-[10px] font-medium text-slate-400 mt-1 px-1">${roleText}</span>
+                    <span class="text-[10px] font-medium text-slate-400 dark:text-zinc-500 mt-1 px-1.5">${roleText}</span>
                 `;
                 chatHistory.appendChild(msgWrapper);
             });
@@ -1196,24 +1211,53 @@
             chatInput.disabled = generating;
             sendChatBtn.disabled = generating || !chatInput.value.trim();
             
+            const existingTyping = document.getElementById('ai-typing-skeleton');
+            if (existingTyping) existingTyping.remove();
+
             if (generating) {
                 aiStatus.classList.remove('hidden');
+                if (editorAiBar) editorAiBar.classList.remove('view-hidden');
+
+                // Inject an animated skeleton typing bubble in the chat
+                const skeleton = document.createElement('div');
+                skeleton.id = 'ai-typing-skeleton';
+                skeleton.className = 'flex flex-col items-start animate-modal';
+                skeleton.innerHTML = `
+                    <div class="w-4/5 p-4 rounded-2xl rounded-tl-xs bg-white dark:bg-zinc-950 border border-indigo-200 dark:border-indigo-900/70 shadow-sm space-y-2.5">
+                        <div class="flex items-center gap-2 text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                            <i class="fas fa-feather-pointed animate-quill"></i>
+                            <span>Drafting narrative prose...</span>
+                        </div>
+                        <div class="h-2 bg-slate-200 dark:bg-zinc-800 rounded-full w-full animate-pulse"></div>
+                        <div class="h-2 bg-slate-200 dark:bg-zinc-800 rounded-full w-5/6 animate-pulse"></div>
+                        <div class="h-2 bg-slate-200 dark:bg-zinc-800 rounded-full w-3/4 animate-pulse"></div>
+                    </div>
+                `;
+                chatHistory.appendChild(skeleton);
+                chatHistory.scrollTop = chatHistory.scrollHeight;
             } else {
                 aiStatus.classList.add('hidden');
+                if (editorAiBar) editorAiBar.classList.add('view-hidden');
                 setTimeout(() => chatInput.focus(), 100);
             }
         }
 
         // =========================================================================
-        // ORIGINAL AI ENGINE & OPENROUTER FETCH LOGIC (UNTOUCHED)
+        // ORIGINAL AI ENGINE & OPENROUTER FETCH LOGIC (100% VERBATIM)
+        // =========================================================================
+        // ORIGINAL AI ENGINE & OPENROUTER FETCH LOGIC (PULLING API & SLUG FROM FIRESTORE)
         // =========================================================================
         async function handleSendMessage() {
             const userPrompt = chatInput.value.trim();
             if (!userPrompt || isGenerating) return;
 
+            // Ensure AI config (`api` and `slug`) is loaded from Firestore `artificial-intelligence/authentication`
+            if (!settings.apiKey || !settings.modelSlug) {
+                await fetchAIConfigFromFirestore();
+            }
+
             if (!settings.apiKey) {
-                showToast("Please set your OpenRouter API Key in Settings first.", "error");
-                renderView('settings');
+                showToast("Could not load 'api' key from Firestore (artificial-intelligence/authentication).", "error");
                 return;
             }
 
@@ -1243,7 +1287,7 @@
                 { role: 'user', content: `Based on the context, write the next part of this chapter following this direction: ${userPrompt}. 
 IMPORTANT RULES: 
 1. Output ONLY the raw story prose.
-2. DO NOT output conversational filler like "Here is the next section" or "Let me know if you want changes".
+​2. DO NOT output conversational filler like "Here is the next section" or "Let me know if you want changes".
 3. DO NOT output markdown code blocks wrapping the text. Just raw text.` }
             ];
 
@@ -1290,7 +1334,7 @@ IMPORTANT RULES:
                     updateViewerContent(chapter.content);
                 }
 
-                saveData();
+                saveData(true);
                 renderChatHistory();
 
             } catch (error) {
@@ -1303,20 +1347,6 @@ IMPORTANT RULES:
             } finally {
                 setGeneratingState(false);
             }
-        }
-
-        // --- Settings Logic ---
-        function populateSettings() {
-            apiKeyInput.value = settings.apiKey || '';
-            modelSlugInput.value = settings.modelSlug || '';
-        }
-
-        function handleSaveSettings() {
-            settings.apiKey = apiKeyInput.value.trim();
-            settings.modelSlug = modelSlugInput.value.trim() || 'openai/gpt-4o-mini';
-            saveSettingsData();
-            showToast('Configuration saved and synced.', 'success');
-            renderView('bookshelf');
         }
 
         // --- Event Listeners ---
@@ -1337,7 +1367,7 @@ IMPORTANT RULES:
             logoutBtn.addEventListener('click', async () => {
                 const confirmed = await openSiteModal({
                     title: 'Sign Out?',
-                    description: 'Your books are safely stored in your cloud storage. Would you like to sign out of your studio session?',
+                    description: 'Your books are safely stored in your cloud database. Would you like to sign out of your studio session?',
                     mode: 'confirm',
                     confirmText: 'Sign Out'
                 });
@@ -1348,8 +1378,8 @@ IMPORTANT RULES:
 
             // Global Nav
             logoBtn.addEventListener('click', () => { if (currentView !== 'bookshelf') renderView('bookshelf'); });
-            settingsBtn.addEventListener('click', () => renderView('settings'));
             backBtn.addEventListener('click', handleBack);
+            themeToggleBtn.addEventListener('click', toggleTheme);
 
             // Bookshelf
             newBookBtn.addEventListener('click', createNewBook);
@@ -1392,19 +1422,6 @@ IMPORTANT RULES:
             chatInput.addEventListener('input', () => {
                 sendChatBtn.disabled = isGenerating || !chatInput.value.trim();
             });
-
-            // Settings
-            saveSettingsBtn.addEventListener('click', handleSaveSettings);
-            toggleApiKeyVis.addEventListener('click', () => {
-                const isPwd = apiKeyInput.type === 'password';
-                apiKeyInput.type = isPwd ? 'text' : 'password';
-                toggleApiKeyVis.innerHTML = isPwd ? '<i class="far fa-eye-slash"></i>' : '<i class="far fa-eye"></i>';
-            });
-            modelPresets.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    modelSlugInput.value = e.target.textContent;
-                });
-            });
             
             window.addEventListener('resize', () => {
                 if (currentView === 'chapter' && chatHistory) {
@@ -1415,6 +1432,7 @@ IMPORTANT RULES:
 
         // --- Initialize App & Auth Listener ---
         function init() {
+            initTheme();
             setupEventListeners();
 
             onAuthStateChanged(auth, async (user) => {
@@ -1426,7 +1444,7 @@ IMPORTANT RULES:
                     if (user.photoURL) {
                         userAvatar.src = user.photoURL;
                     }
-                    await loadDataFromFirebaseStorage();
+                    await loadDataFromFirestore();
                 } else {
                     currentUser = null;
                     books = [];
