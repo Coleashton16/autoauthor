@@ -468,6 +468,96 @@
         const modalConfirmBtn = document.getElementById('modal-confirm-btn');
         const modalIcon = document.getElementById('modal-icon');
         const modalIconContainer = document.getElementById('modal-icon-container');
+        const toastContainer = document.getElementById('toast-container');
+
+        // =========================================================================
+        // SITE-HANDLED MODALS & TOAST NOTIFICATIONS (NO BROWSER ALERTS/PROMPTS)
+        // =========================================================================
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            const colorMap = {
+                success: 'bg-slate-900 border-emerald-500/40 text-white',
+                error: 'bg-red-950 border-red-500/40 text-red-100',
+                info: 'bg-slate-900 border-indigo-500/40 text-white'
+            };
+            const iconMap = {
+                success: 'fa-circle-check text-emerald-400',
+                error: 'fa-circle-exclamation text-red-400',
+                info: 'fa-circle-info text-indigo-400'
+            };
+
+            toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-xl text-xs font-medium animate-modal ${colorMap[type] || colorMap.info}`;
+            toast.innerHTML = `
+                <i class="fas ${iconMap[type] || iconMap.info} text-sm shrink-0"></i>
+                <span class="flex-grow leading-relaxed">${escapeHtml(message)}</span>
+            `;
+            toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(8px)';
+                toast.style.transition = 'all 0.2s ease';
+                setTimeout(() => toast.remove(), 200);
+            }, 3500);
+        }
+
+        function openSiteModal({ title, description, mode = 'prompt', placeholder = '', confirmText = 'Confirm', danger = false }) {
+            return new Promise((resolve) => {
+                modalTitle.textContent = title;
+                modalDescription.textContent = description;
+                modalConfirmBtn.textContent = confirmText;
+
+                if (danger) {
+                    modalConfirmBtn.className = "px-5 py-2 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-700 text-white transition shadow-sm";
+                    modalIconContainer.className = "w-11 h-11 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center shrink-0 text-lg";
+                    modalIcon.className = "fas fa-triangle-exclamation";
+                } else {
+                    modalConfirmBtn.className = "px-5 py-2 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm";
+                    modalIconContainer.className = "w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 text-lg";
+                    modalIcon.className = "fas fa-feather";
+                }
+
+                if (mode === 'prompt') {
+                    modalInputWrapper.classList.remove('view-hidden');
+                    modalInput.value = '';
+                    modalInput.placeholder = placeholder;
+                } else {
+                    modalInputWrapper.classList.add('view-hidden');
+                }
+
+                modalBackdrop.classList.remove('view-hidden');
+                if (mode === 'prompt') {
+                    setTimeout(() => modalInput.focus(), 50);
+                }
+
+                const cleanup = () => {
+                    modalBackdrop.classList.add('view-hidden');
+                    modalConfirmBtn.onclick = null;
+                    modalCancelBtn.onclick = null;
+                    modalInput.onkeydown = null;
+                };
+
+                modalConfirmBtn.onclick = () => {
+                    const val = mode === 'prompt' ? modalInput.value : true;
+                    cleanup();
+                    resolve(val);
+                };
+
+                modalCancelBtn.onclick = () => {
+                    cleanup();
+                    resolve(null);
+                };
+
+                modalInput.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        modalConfirmBtn.click();
+                    } else if (e.key === 'Escape') {
+                        modalCancelBtn.click();
+                    }
+                };
+            });
+        }
 
         // =========================================================================
         // FIRESTORE DATABASE: AI CREDENTIALS & BOOKS STORAGE
